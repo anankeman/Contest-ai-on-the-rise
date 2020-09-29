@@ -16,6 +16,7 @@ from captureAgents import CaptureAgent
 import random, time, util
 from game import Directions
 import game
+import capture
 
 #################
 # Team creation #
@@ -53,39 +54,31 @@ class AstartAgent(CaptureAgent):
         CaptureAgent.registerInitialState(self, gameState)
         
         self.plan = self.aStar(gameState)
-        #print(self.plan)
-        self.policy = {str(a[0]): a[1] for a in self.plan}
         
-        self.stepsAchived = []
+        self.frontier = halfGrid(gameState.data.layout, self.red, gameState)
+        print(self.frontier)
+
         
         
     def chooseAction(self, gameState):
         
-        #remaining = list(set(self.plan)-set(self.stepsAchived))
+
         myPos = gameState.getAgentState(self.index).getPosition()
         actions = gameState.getLegalActions(self.index)
         
-        #g = {p: self.getMazeDistance(myPos, p[0]) for p in self.plan}
-        #nextGoal = min(g, key= lambda k: g[k])
+
         nextGoal = self.plan[0]
-        print(nextGoal)
-        ghost = False
-        if ghost:
-            nextAction = self.runFromGhost()
+        enemies = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
+        ghost = [a for a in enemies if not a.isPacman and a.getPosition() != None]
+        amIghost = gameState.getAgentState(self.index).isPacman
+        
+        if len(ghost)>0 and amIghost:
+            nextAction = self.runFromGhost(gameState, ghost, actions, myPos)
         else:
             # if state in policy execute policy
             if myPos == nextGoal[0]:
                 nextAction = self.plan.pop(0)[1]
                 
-                """
-                if str(myPos) in self.policy.keys():
-                    currentIndex = 9999
-                    for i,e in enumerate(self.plan):
-                        if myPos == e[0] and i < currentIndex:
-                            currentIndex = i
-                    nextAction = self.plan.pop(currentIndex)[1]
-                        #self.stepsAchived.append([i for i in self.plan if i[0]==myPos] )
-                """
             else:
                 #go to the closest state in remaining plan
                 bestDist = 999999
@@ -100,8 +93,26 @@ class AstartAgent(CaptureAgent):
         
         return nextAction
     
-    def runFromGhost(self):
-        return False
+    def runFromGhost(self, gameState, ghost, actions, myPos):
+        ghostPos = ghost[0].getPosition()
+        distanceToFront = {i: self.getMazeDistance(myPos, i) for i in self.frontier}
+        nextGoal = min(distanceToFront, key= lambda k: distanceToFront[k])
+        
+        bestDist = 999999
+        ghostFear = 0
+        for action in actions:
+            successor = self.getSuccessor(gameState, action)
+            pos2 = successor.getAgentPosition(self.index)
+            dist = self.getMazeDistance(pos2, nextGoal)
+            ghostDistance = self.getMazeDistance(pos2, ghostPos)
+            dist = dist - ghostDistance
+            if dist < bestDist:# and ghostDistance > ghostFear:
+              bestAction = action
+              bestDist = dist
+              ghostFear = ghostDistance
+        nextAction = bestAction
+        
+        return nextAction
     
     def getSuccessor(self, gameState, action):
         
@@ -126,22 +137,19 @@ class AstartAgent(CaptureAgent):
         bestG = dict()
         while not priorityQ.isEmpty():
             currentState, answer, currentCost = priorityQ.pop()
-            #if currentState not in bestG.keys():
-            #    bestG[currentState] = 99999
             
             if currentState not in mark or currentCost < bestG.get(currentState):
                 mark.append(currentState)
                 bestG[currentState] = currentCost
-                #print(len(self.getFood(currentState).asList()))
+                
                 if len(self.getFood(currentState).asList())== 0:                    
                     return answer[1:]
                 actions = currentState.getLegalActions(self.index)
                 pos = currentState.getAgentState(self.index).getPosition()
-                #print(pos)
+                
                 for action in actions:
                     nextState = self.getSuccessor(currentState, action)
                     nextCost = currentCost + 1
-                    #if nextState not in mark or currentCost < bestG[nextState]:
                     heu = self.evaluate(nextState)
                     currentPath = list(answer)
                     currentPath.append((pos, action))
@@ -334,3 +342,22 @@ class DefensiveReflexAgent(ReflexCaptureAgent):
 
   def getWeights(self, gameState, action):
     return {'numInvaders': -1000, 'onDefense': 100, 'invaderDistance': -10, 'stop': -100, 'reverse': -2}
+
+def halfGrid(grid, red, gameState):
+    halfway = grid.width // 2
+    halfgrid = [[0]*halfway for i in range(grid.height)]
+    
+    if red:    xrange = range(halfway)
+    else:       xrange = range(halfway, grid.width)
+    
+    for y in range(grid.height):
+        for x in xrange:
+            if not gameState.hasWall(x,y):
+                halfgrid[x][y] = (x,y)         
+
+    if red:
+        front = [i for i in halfgrid[-1] if i!=0]
+    else:
+        front = [i for i in halfgrid[0] if i!=0]
+            
+    return front
