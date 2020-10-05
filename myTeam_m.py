@@ -24,7 +24,7 @@ import math
 #################
 
 def createTeam(firstIndex, secondIndex, isRed,
-               first = 'AttackAgent', second = 'AttackAgent'):
+               first = 'DeffendAgent', second = 'DeffendAgent'):
   """
   This function should return a list of two agents that will form the
   team, initialized using firstIndex and secondIndex as their agent
@@ -94,7 +94,7 @@ class DummyAgent(CaptureAgent):
     return random.choice(actions)
 
 #-------------------------------------------------------------------------------------
-class AttackAgent(CaptureAgent):
+class DeffendAgent(CaptureAgent):
   """
   A Dummy agent to serve as an example of the necessary agent structure.
   You should look at baselineTeam.py for more details about how to
@@ -122,11 +122,10 @@ class AttackAgent(CaptureAgent):
     '''
     CaptureAgent.registerInitialState(self, gameState)
     self.count = 0
+    self.target = None
     self.boundaries = self.getBoundaries(gameState)
     food_list = self.getFood(gameState).asList()
     self.initial_food = len(food_list)
-    width_x = gameState.data.layout.height
-    self.halfway = width_x//2
     '''
     Your initialization code goes here, if you need any.
     '''
@@ -135,30 +134,34 @@ class AttackAgent(CaptureAgent):
     """
     Picks among actions randomly.
     """
-
+    print(self.getOpponentsDistances(gameState))
     pos = gameState.getAgentPosition(self.index)
-
+    width_x = gameState.data.layout.height
+    halfway = width_x//2
     previous = self.getPreviousObservation()
+    food_list_previous = []
     if previous is not None:
+      food_list_previous = self.getFoodYouAreDefending(previous).asList()
       if previous.hasFood(pos[0], pos[1]):
         self.count += 1
-      elif (self.red & pos[1] < self.halfway) or (not self.red & pos[1] > self.halfway):
+      elif (self.red & pos[1] < halfway) or (not self.red & pos[1] > halfway):
         self.count += 0
     start = time.time()
     capsules_list = self.getCapsules(gameState)
     opponents_index_list = self.getOpponents(gameState)
     opponents_agent_list = [gameState.getAgentState(x).scaredTimer for x in opponents_index_list]
-    food_list = self.getFood(gameState).asList()
+    food_list_current = self.getFoodYouAreDefending(gameState).asList()
+    if self.target is not None:
+      if pos == self.target:
+        self.target = None
     #print(food_list)
-    if len(capsules_list) > 0 and max(opponents_agent_list) == 0:
-      #print('getCapsule')
+    if self.getInvaders(gameState) is not None:
+      self.target = self.getExactInvaders(gameState)
+      path = self.aStarSearch(gameState, 'getInvaders', start)
+    elif len(food_list_previous) - len(food_list_current)  > 0:
+      self.target = list(set(food_list_previous) - set(food_list_current))[0]
       path = self.aStarSearch(gameState, 'getFood', start)
-
-    elif max(opponents_agent_list) > 0:
-      #print('getFood_Scared')
-      path = self.aStarSearch(gameState, 'getFood_Scared', start)
     else:
-      #print('getFood')
       path = self.aStarSearch(gameState, 'getFood', start)
 
     print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
@@ -209,10 +212,9 @@ class AttackAgent(CaptureAgent):
         final.append(boundary)
     #print(boundaries)
     return final
-  #List with opponents classified in PacMan or Ghost, and the Maze Distance to it
-  def getOpponentsDistances(self, gameState):
 
-    opponents_distance_list = []
+  def getExactInvaders(self, gameState):
+    opponents_pos_list = util.Counter()
     current_state = gameState.getAgentState(self.index)
     current_position = current_state.getPosition()
 
@@ -221,21 +223,49 @@ class AttackAgent(CaptureAgent):
 
     for oponent_agent in opponents_agent_list:
       if oponent_agent.isPacman:
-        type = 'pacman'
-      else:
-        type = 'ghost'
-      opponent_distance = oponent_agent.getPosition()
-      if opponent_distance is not None:
-        dist = self.getMazeDistance(current_position, opponent_distance)
-        opponents_distance_list.append(dist)
-    if len(opponents_distance_list) == 0:
-      approx_distances = self.getCurrentObservation().getAgentDistances()
-      opponents_index_list = self.getOpponents(gameState)
-      opponents_distance_list = [approx_distances[x] for x in opponents_index_list]
-    if min(opponents_distance_list) == 0:
-      return 0.01
+        index = opponents_agent_list.index(oponent_agent)
+        opponent_pos = oponent_agent.getPosition()
+        if opponent_pos is not None:
+          dist = self.getMazeDistance(current_position, opponent_pos)
+          opponents_pos_list[opponent_pos] = -dist
+    if opponents_pos_list:
+      key = util.argMax(opponents_pos_list)
+      return key
+    else:
+      return None
 
-    return min(opponents_distance_list)
+
+  #List with opponents classified in PacMan or Ghost, and the Maze Distance to it
+  def getOpponentsDistances(self, gameState):
+
+    opponents_distance_list = util.Counter()
+    opponents_noisyDistance_list = util.Counter()
+    final = {}
+    current_state = gameState.getAgentState(self.index)
+    current_position = current_state.getPosition()
+
+    opponents_index_list = self.getOpponents(gameState)
+    opponents_agent_list = [gameState.getAgentState(x) for x in opponents_index_list]
+
+    for oponent_agent in opponents_agent_list:
+      if oponent_agent.isPacman:
+        index = opponents_agent_list.index(oponent_agent)
+        opponent_pos = oponent_agent.getPosition()
+        if opponent_pos is not None:
+          dist = self.getMazeDistance(current_position, opponent_pos)
+          opponents_distance_list[opponent_pos] = -dist
+        else:
+          approx_distances = self.getCurrentObservation().getAgentDistances()[index]
+          opponents_noisyDistance_list[oponent_agent] = -abs(approx_distances)
+    if len(opponents_distance_list):
+      key = util.argMax(opponents_distance_list)
+      final['exact'] = [key, opponents_distance_list[key]]
+    elif len(opponents_noisyDistance_list):
+      key = util.argMax(opponents_noisyDistance_list)
+      final['noisy'] = [key, opponents_noisyDistance_list[key]]
+
+
+    return final
 
   #List distance to the nearest food
   def getDistanceNearestFood(self, gameState):
@@ -278,18 +308,10 @@ class AttackAgent(CaptureAgent):
 
     return min(boundary_distance_list)
 
-  def getGoal(self, goal, initialState, finalState, count):
-    if goal == "getCapsule":
-      capsules_list_init = self.getCapsules(initialState)
-      capsules_list_fin = self.getCapsules(finalState)
-      if len(capsules_list_init) - len(capsules_list_fin) == 1:
-        return True
-      else:
-        return False
-    if goal == "getFood" or goal == "getFood_Scared":
-      food_list_init = self.getFood(initialState).asList()
-      food_list_fin = self.getFood(finalState).asList()
-      if len(food_list_init) - len(food_list_fin) == 1:
+  def getGoal(self, goal, initialState, finalState):
+    current_pos = finalState.getAgentState(self.index).getPosition()
+    if goal == "getInvader" or goal == "getFood":
+      if current_pos == self.target:
         return True
       else:
         return False
@@ -303,12 +325,10 @@ class AttackAgent(CaptureAgent):
     dict = {}
     dict[pos] = (None,None,0, self.heuristic_Astar(gameState, goal))
     open.push(gameState, self.heuristic_Astar(gameState, goal))
-    count = 0
     while not open.isEmpty() or time.time() - start > 100:
-      count += 1
       current_state = open.pop()
       pos_cur = current_state.getAgentState(self.index).getPosition()
-      if self.getGoal(goal, gameState, current_state, count):
+      if self.getGoal(goal, gameState, current_state):
         parent, action, cost, heuristic = dict[pos_cur]
         heuristic = 0
         dict.update({pos_cur: (parent, action, cost, heuristic)})
@@ -323,7 +343,6 @@ class AttackAgent(CaptureAgent):
             visited.add(pos_suc)
             open.update(successor,dict[pos_suc][2] + self.heuristic_Astar(successor, goal))
     path = self.keyName(gameState, dict)
-    #print(path)
     return path
 
   def keyName(self, startPoint, dict):
@@ -336,98 +355,37 @@ class AttackAgent(CaptureAgent):
         val = heuristic
         final_action = action
     return final_action
-  '''
-  def keyName(self, key, startPoint, dict):
-    track = []
-    if (key in dict.keys()) and (key != startPoint) and (len(key) != None):
-      print(dict[key][1])
-      track.append(dict[key][1])
-      self.keyName(dict[key][0], startPoint, dict)
-    return track
-  '''
+
+
+  def getExactInvader(self, gameState):
+    current_state = gameState.getAgentState(self.index)
+    current_position = current_state.getPosition()
+    return self.getMazeDistance(current_position, self.target)
 
   def heuristic_Astar(self, successor, goal):
     food_list = self.getFood(successor).asList()
     features = util.Counter()
-    if goal == "getCapsule":
-      features['minDistanceFood'] = 0
-      features['minDistanceOpponent'] = 1/self.getOpponentsDistances(successor)
-      features['minDistanceCapsule'] = self.getDistanceNearestCapsule(successor)
-      features['minDistanceOurArea'] = 0
-    elif goal == "getFood_Scared":
-      features['minDistanceFood'] = self.getDistanceNearestFood(successor)
-      features['minDistanceOpponent'] = 1/self.getOpponentsDistances(successor)
-      features['minDistanceCapsule'] = 0
-      features['minDistanceOurArea'] = 0
+    if goal == "getInvader":
+      features['minDistanceFood'] = 99
+      features['minDistanceOpponent'] = self.getExactInvader(successor)
+      features['minDistanceCapsule'] = 99
+      features['minDistanceOurArea'] = 99
     elif goal == "getFood":
-      op_dist = self.getOpponentsDistances(successor)
-      current_food = self.count
-      per = (len(food_list)-current_food)/len(food_list)
-      e = 0.1
-      min_dist_food = self.getDistanceNearestFood(successor)
-      features['minDistanceFood'] = min_dist_food*(1+per+e)
-      features['minDistanceOpponent'] = 1/op_dist
-      features['minDistanceCapsule'] = 0
-      features['minDistanceOurArea'] = (self.getDistanceNearestPointArea(successor) + min_dist_food + self.initial_food - current_food)*(2-per)
-    #features['successorScore'] = 1/len(food_list)
-    #features['minDistanceFood'] = getDistanceNearestFood(successor)
-    #features['minDistanceOpponent'] = getOpponentsDistances(successor)
-    #features['minDistanceOurArea'] = getDistanceNearestPointArea(successor)
-    #features['minDistanceCapsule'] = getDistanceNearestCapsule(successor)
+      features['minDistanceFood'] = self.getExactInvader(successor)
+      features['minDistanceOpponent'] = 99
+      features['minDistanceCapsule'] = 99
+      features['minDistanceOurArea'] = 99
     weights = self.getWeights(goal)
     return features*weights
 
   def getWeights(self, goal):
-    if goal == "getCapsule":
-      return {'minDistanceFood': 0,
-                      'minDistanceOpponent': 30,
-                      'minDistanceCapsule': 1,
-                      'minDistanceOurArea': 0}
-    elif goal == "getFood_Scared":
+    if goal == "getInvader":
       return {'minDistanceFood': 1,
-                      'minDistanceOpponent': 0,
-                      'minDistanceCapsule': 0,
-                      'minDistanceOurArea': 0}
+                      'minDistanceOpponent': 1,
+                      'minDistanceCapsule': 1,
+                      'minDistanceOurArea': 1}
     elif goal == "getFood":
       return {'minDistanceFood': 1,
-                      'minDistanceOpponent': 30,
-                      'minDistanceCapsule': 0,
+                      'minDistanceOpponent': 1,
+                      'minDistanceCapsule': 1,
                       'minDistanceOurArea': 1}
-
-#-----------------------------------------------------------------------------------
-  #Initialize prior belief P(X_0)
-  def initializePriorBelief(self, gameState):
-    priorBelief = util.Counter()
-    opponents_index_list = self.getOpponents(gameState)
-    legal_positions = self.legalPositions
-    for opponent in opponents_index_list:
-      for position in legal_positions:
-        priorBelief[opponent][position] = 1
-      priorBelief[opponent].normalize()
-    return priorBelief
-  '''
-  #Initialize posterior P(X_0|Y_0) = P(Y_0|X_0)*P(X_0)
-  def initializeposteriorBelief(self, gameState):
-    posteriorBelief = util.Counter()
-    approx_distances = self.getCurrentObservation().getAgentDistances()
-    opponents_index_list = self.getOpponents(gameState)
-    legal_positions = self.legalPositions
-    for opponent in opponents_index_list:
-      for position in legal_positions:
-        PX_0Y_0 = gameState.getDistanceProb(approx_distances[opponent], knownDistance)
-        PX_0 = self.priorBelief[opponent][position]
-    return posteriorBelief
-
-  #Calculate distance based on Probability
-  def getProbabilityDistance(self, gameState):
-    #List of distances to each agent based on i
-    approx_distances = self.getCurrentObservation().getAgentDistances()
-    opponents_index_list = self.getOpponents(gameState)
-    legal_positions = self.legalPositions
-    dist_prob = util.Counter()
-
-    for opponent in opponents_index_list:
-      for position in legal_positions:
-        dist_prob[opponent] = self.getMazeDistance(current_position, opponent_distance)
-    pass
-  '''

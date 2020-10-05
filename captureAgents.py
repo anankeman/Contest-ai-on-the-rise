@@ -256,6 +256,7 @@ class CaptureAgent(Agent):
     if len(self.observationHistory) == 1: return None
     else: return self.observationHistory[-2]
 
+
   def getCurrentObservation(self):
     """
     Returns the GameState object corresponding this agent's current observation
