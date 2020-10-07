@@ -124,8 +124,9 @@ class DeffendAgent(CaptureAgent):
     self.count = 0
     self.target = None
     self.boundaries = self.getBoundaries(gameState)
-    food_list = self.getFood(gameState).asList()
+    food_list = self.getFoodYouAreDefending(gameState).asList()
     self.initial_food = len(food_list)
+    self.centerOurFood = self.getCenterOurFood(gameState)
     '''
     Your initialization code goes here, if you need any.
     '''
@@ -134,8 +135,8 @@ class DeffendAgent(CaptureAgent):
     """
     Picks among actions randomly.
     """
-    print(self.getOpponentsDistances(gameState))
     pos = gameState.getAgentPosition(self.index)
+    self.centerOurFood = self.getCenterOurFood(gameState)
     width_x = gameState.data.layout.height
     halfway = width_x//2
     previous = self.getPreviousObservation()
@@ -155,15 +156,19 @@ class DeffendAgent(CaptureAgent):
       if pos == self.target:
         self.target = None
     #print(food_list)
-    if self.getInvaders(gameState) is not None:
+    if self.getExactInvaders(gameState) is not None:
       self.target = self.getExactInvaders(gameState)
       path = self.aStarSearch(gameState, 'getInvaders', start)
     elif len(food_list_previous) - len(food_list_current)  > 0:
       self.target = list(set(food_list_previous) - set(food_list_current))[0]
       path = self.aStarSearch(gameState, 'getFood', start)
+    elif self.target is not None:
+      path = self.aStarSearch(gameState, 'getInvaders', start)
+    elif util.manhattanDistance(pos, self.centerOurFood) > 5 :
+      self.target = self.centerOurFood
+      path = self.aStarSearch(gameState, 'goCenter', start)
     else:
-      path = self.aStarSearch(gameState, 'getFood', start)
-
+      return Directions.STOP
     print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
     '''
     You should change this in your own agent.
@@ -229,7 +234,7 @@ class DeffendAgent(CaptureAgent):
           dist = self.getMazeDistance(current_position, opponent_pos)
           opponents_pos_list[opponent_pos] = -dist
     if opponents_pos_list:
-      key = util.argMax(opponents_pos_list)
+      key = opponents_pos_list.argMax()
       return key
     else:
       return None
@@ -258,12 +263,13 @@ class DeffendAgent(CaptureAgent):
           approx_distances = self.getCurrentObservation().getAgentDistances()[index]
           opponents_noisyDistance_list[oponent_agent] = -abs(approx_distances)
     if len(opponents_distance_list):
-      key = util.argMax(opponents_distance_list)
+      key = opponents_distance_list.argMax()
       final['exact'] = [key, opponents_distance_list[key]]
     elif len(opponents_noisyDistance_list):
-      key = util.argMax(opponents_noisyDistance_list)
+      key = opponents_noisyDistance_list.argMax()
       final['noisy'] = [key, opponents_noisyDistance_list[key]]
-
+    else:
+      final = []
 
     return final
 
@@ -272,7 +278,7 @@ class DeffendAgent(CaptureAgent):
     current_state = gameState.getAgentState(self.index)
     current_position = current_state.getPosition()
 
-    food_list = self.getFood(gameState).asList()
+    food_list = self.getFoodYouAreDefending(gameState).asList()
     if len(food_list) > 0:
       minimum_distance = min([self.getMazeDistance(current_position, food) for food in food_list])
     else:
@@ -308,9 +314,33 @@ class DeffendAgent(CaptureAgent):
 
     return min(boundary_distance_list)
 
+  def getCenterOurFood(self, gameState):
+    food_list = self.getFoodYouAreDefending(gameState).asList()
+    x_sum = 0
+    y_sum = 0
+    len_list = len(food_list)
+    for x, y in food_list:
+      x_sum += x
+      y_sum += y
+
+    near_pos = nearestPoint((x_sum/len_list, y_sum/len_list))
+    near = 999
+    final_pos = ()
+    for pos_food in food_list:
+      dist = util.manhattanDistance(pos_food, near_pos)
+      if dist < near:
+        near = dist
+        final_pos = pos_food
+    return final_pos
+
   def getGoal(self, goal, initialState, finalState):
     current_pos = finalState.getAgentState(self.index).getPosition()
     if goal == "getInvader" or goal == "getFood":
+      if current_pos == self.target:
+        return True
+      else:
+        return False
+    elif goal == "goCenter":
       if current_pos == self.target:
         return True
       else:
@@ -363,9 +393,9 @@ class DeffendAgent(CaptureAgent):
     return self.getMazeDistance(current_position, self.target)
 
   def heuristic_Astar(self, successor, goal):
-    food_list = self.getFood(successor).asList()
     features = util.Counter()
-    if goal == "getInvader":
+    pos = successor.getAgentPosition(self.index)
+    if goal == "getInvaders":
       features['minDistanceFood'] = 99
       features['minDistanceOpponent'] = self.getExactInvader(successor)
       features['minDistanceCapsule'] = 99
@@ -375,16 +405,26 @@ class DeffendAgent(CaptureAgent):
       features['minDistanceOpponent'] = 99
       features['minDistanceCapsule'] = 99
       features['minDistanceOurArea'] = 99
+    elif goal == "goCenter":
+      features['minDistanceFood'] = self.getMazeDistance(pos, self.centerOurFood)
+      features['minDistanceOpponent'] = 99
+      features['minDistanceCapsule'] = 99
+      features['minDistanceOurArea'] = 99
     weights = self.getWeights(goal)
     return features*weights
 
   def getWeights(self, goal):
-    if goal == "getInvader":
+    if goal == "getInvaders":
       return {'minDistanceFood': 1,
                       'minDistanceOpponent': 1,
                       'minDistanceCapsule': 1,
                       'minDistanceOurArea': 1}
     elif goal == "getFood":
+      return {'minDistanceFood': 1,
+                      'minDistanceOpponent': 1,
+                      'minDistanceCapsule': 1,
+                      'minDistanceOurArea': 1}
+    elif goal == "goCenter":
       return {'minDistanceFood': 1,
                       'minDistanceOpponent': 1,
                       'minDistanceCapsule': 1,
