@@ -127,6 +127,7 @@ class DeffendAgent(CaptureAgent):
     food_list = self.getFoodYouAreDefending(gameState).asList()
     self.initial_food = len(food_list)
     self.centerOurFood = self.getCenterOurFood(gameState)
+    self.scared = gameState.getAgentState(self.index).scaredTimer
     '''
     Your initialization code goes here, if you need any.
     '''
@@ -135,6 +136,7 @@ class DeffendAgent(CaptureAgent):
     """
     Picks among actions randomly.
     """
+    self.scared = gameState.getAgentState(self.index).scaredTimer
     pos = gameState.getAgentPosition(self.index)
     self.centerOurFood = self.getCenterOurFood(gameState)
     width_x = gameState.data.layout.height
@@ -156,9 +158,12 @@ class DeffendAgent(CaptureAgent):
       if pos == self.target:
         self.target = None
     #print(food_list)
-    if self.getExactInvaders(gameState) is not None:
+    if self.getExactInvaders(gameState) is not None and self.scared == 0:
       self.target = self.getExactInvaders(gameState)
       path = self.aStarSearch(gameState, 'getInvaders', start)
+    elif self.getExactInvaders(gameState) is not None and self.scared > 0:
+      self.target = self.getExactInvaders(gameState)
+      path = self.aStarSearch(gameState, 'getInvaders_scared', start)
     elif len(food_list_previous) - len(food_list_current)  > 0:
       self.target = list(set(food_list_previous) - set(food_list_current))[0]
       path = self.aStarSearch(gameState, 'getFood', start)
@@ -335,13 +340,18 @@ class DeffendAgent(CaptureAgent):
 
   def getGoal(self, goal, initialState, finalState):
     current_pos = finalState.getAgentState(self.index).getPosition()
-    if goal == "getInvader" or goal == "getFood":
+    if goal == "getInvaders" or goal == "getFood":
       if current_pos == self.target:
         return True
       else:
         return False
     elif goal == "goCenter":
       if current_pos == self.target:
+        return True
+      else:
+        return False
+    elif goal == "getInvaders_scared":
+      if self.getMazeDistance(current_pos, self.target) == 2:
         return True
       else:
         return False
@@ -378,12 +388,15 @@ class DeffendAgent(CaptureAgent):
   def keyName(self, startPoint, dict):
     pos = startPoint.getAgentState(self.index).getPosition()
     val = 9999
+    final_action = None
     for key in dict.keys():
       parent, action, cost, heuristic = dict[key]
       if parent != None and parent == pos and heuristic < val:
         print(parent, action, cost, heuristic)
         val = heuristic
         final_action = action
+    if final_action is None:
+      final_action = Directions.STOP
     return final_action
 
 
@@ -395,7 +408,7 @@ class DeffendAgent(CaptureAgent):
   def heuristic_Astar(self, successor, goal):
     features = util.Counter()
     pos = successor.getAgentPosition(self.index)
-    if goal == "getInvaders":
+    if goal == "getInvaders" or goal == "getInvaders_scared":
       features['minDistanceFood'] = 99
       features['minDistanceOpponent'] = self.getExactInvader(successor)
       features['minDistanceCapsule'] = 99
@@ -414,7 +427,7 @@ class DeffendAgent(CaptureAgent):
     return features*weights
 
   def getWeights(self, goal):
-    if goal == "getInvaders":
+    if goal == "getInvaders" or goal == "getInvaders_scared":
       return {'minDistanceFood': 1,
                       'minDistanceOpponent': 1,
                       'minDistanceCapsule': 1,
