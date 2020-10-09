@@ -152,6 +152,7 @@ class AttackAgent(CaptureAgent):
         food_list = self.getFood(gameState).asList()
         self.initial_food = len(food_list)
         
+        
 
     def chooseAction(self, gameState):
         """
@@ -160,7 +161,7 @@ class AttackAgent(CaptureAgent):
         start = time.time()
 
         pos = gameState.getAgentPosition(self.index)
-
+        
         previous = self.getPreviousObservation()
         if previous is not None:
             if previous.hasFood(pos[0], pos[1]):
@@ -168,14 +169,16 @@ class AttackAgent(CaptureAgent):
             else:
                 if (self.red and pos[0] < self.halfway) or (not self.red and pos[0] > self.halfway):
                     self.count = 0
+                    
         #issues: ghost information is shared between teammates
-        #issues: countFood is not working        
-        print('Count: ---->'+str(self.count))
+
+        
         ghost = self.getOpponentsDistances(gameState, pos)
         border = self.getDistanceNearestPointArea(gameState, pos) 
         
         if ghost < 10:
             capsule = self.getDistanceNearestCapsule(gameState, pos)
+            
             if capsule > border:
                 print("go border cus ghost")
                 path = self.aStarSearch(gameState, 'getBorder')
@@ -183,7 +186,7 @@ class AttackAgent(CaptureAgent):
                 print("go capsule")
                 path = self.aStarSearch(gameState, 'getCapsule')
         else:
-            nextFood = self.getDistanceNearestFood(gameState, pos)
+            nextFood = self.getDistanceNearestFood(gameState, pos, True)
             if nextFood > border and self.count > 0:
                 print("go border")
                 path = self.aStarSearch(gameState, 'getBorder')
@@ -191,7 +194,7 @@ class AttackAgent(CaptureAgent):
                 print("go food")
                 path = self.aStarSearch(gameState, 'getFood')
 
-        #print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
+        print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
 
         return path
 
@@ -221,21 +224,25 @@ class AttackAgent(CaptureAgent):
         border= [i for i in border if i!=0]
         return border
 
-
+    
     # Maze Distance to nearest enemy ghost
     def getOpponentsDistances(self, gameState, pos):
         enemies = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
-        ghost = [a.getPosition() for a in enemies if not a.isPacman and a.getPosition() is not None]
+        ghost = [a.getPosition() for a in enemies if (not a.isPacman and a.scaredTimer < 2) and a.getPosition() is not None]
+        
         if len(ghost) > 0:
+            #return distance to the closes ghost
             return min([self.getMazeDistance(pos, i) for i in ghost])
         else:
             return 999 #smooth value?
 
     #Maze distance to the nearest food
-    def getDistanceNearestFood(self, gameState, pos):
+    def getDistanceNearestFood(self, gameState, pos, one = False):
         food = self.getFood(gameState).asList()
         if len(food) == 0:
             return 0
+        if one:
+            return min([self.getMazeDistance(pos, i) for i in food])
         return self.closestPoint(pos, food, 0)
         #return min([self.getMazeDistance(pos, i) for i in food])
 
@@ -307,12 +314,13 @@ class AttackAgent(CaptureAgent):
                     nextState = self.getSuccessor(currentState, action)
                     nextCost = currentCost + 1
                     heu = self.heuristic_Astar(nextState, goal)
-                    print('heu: '+str(heu))
+                    #print('heu: '+str(heu))
                     currentPath = list(answer)
                     currentPath.append((pos, action))
                     priorityQ.push((nextState, currentPath, currentCost), heu+nextCost)
         
         return case[1][1]
+    
 
 
     def heuristic_Astar(self, successor, goal):
@@ -332,15 +340,8 @@ class AttackAgent(CaptureAgent):
             features['minDistanceCapsule'] = 0
             features['minDistanceOurArea'] = self.getDistanceNearestPointArea(successor, pos)
         elif goal == "getFood":
-            op_dist = self.getOpponentsDistances(successor, pos)
-            #print("opp: " + str(1/op_dist))
-            #current_food = self.count
-            #per = (len(food_list)-current_food)/len(food_list)
-            #e = 0.1
-            min_dist_food = self.getDistanceNearestFood(successor, pos)
-            #print( 'food: '+str(min_dist_food))
-            features['minDistanceFood'] = min_dist_food#*(1+per+e)
-            features['minDistanceOpponent'] = (1/op_dist)
+            features['minDistanceFood'] = self.getDistanceNearestFood(successor, pos)
+            features['minDistanceOpponent'] = (1/ self.getOpponentsDistances(successor, pos))
             features['minDistanceCapsule'] = 0
             features['minDistanceOurArea'] = 0#(self.getDistanceNearestPointArea(successor, pos)# + min_dist_food + self.initial_food - current_food)*(2-per)
         
