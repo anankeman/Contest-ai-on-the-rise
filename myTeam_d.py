@@ -128,12 +128,10 @@ class DeffendAgent(CaptureAgent):
     self.initial_food = len(food_list)
     self.centerOurFood = self.getCenterOurFood(gameState)
     self.scared = gameState.getAgentState(self.index).scaredTimer
+    #from here are the patrol instance variables
     self.top = self.getTop(gameState)
     self.bottom = self.getBottom(gameState)
     self.goingUp = False
-    '''
-    Your initialization code goes here, if you need any.
-    '''
 
   def chooseAction(self, gameState):
     self.scared = gameState.getAgentState(self.index).scaredTimer
@@ -157,10 +155,12 @@ class DeffendAgent(CaptureAgent):
     food_list_current = self.getFoodYouAreDefending(gameState).asList()
     if self.target is not None:
       if pos == self.target:
+        #next two if statements added for patrol
         if self.target == self.top:
           self.goingUp = False
         elif self.target == self.bottom:
           self.goingUp = True
+        # ----------------------
         self.target = None
     #print(food_list)
     if self.getExactInvaders(gameState) is not None and self.scared == 0:
@@ -174,6 +174,8 @@ class DeffendAgent(CaptureAgent):
       path = self.aStarSearch(gameState, 'getFood', start)
     elif self.target is not None:
       path = self.aStarSearch(gameState, 'getInvaders', start)
+    # patrol added below
+    # if no target, goes to the border, and then as long as agent is within manhattan dist of 5 goes on patrol
     elif self.target == None:
       if border_dist > 5:
         self.target = self.getNearestBorder(gameState)
@@ -185,6 +187,7 @@ class DeffendAgent(CaptureAgent):
         else:
           self.target = self.top
           path = self.aStarSearch(gameState, 'goCenter', start)
+    # ----------------------------------
     else:
       return Directions.STOP
     #print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
@@ -232,6 +235,7 @@ class DeffendAgent(CaptureAgent):
     #print(boundaries)
     return final
 
+  #gets the top coordinate for the patrol. checks 8 further coordinates if wall found.
   def getTop(self, gameState):
     height = gameState.data.layout.height
     if self.red:
@@ -248,6 +252,7 @@ class DeffendAgent(CaptureAgent):
             top = (next_x, next_y)
     return top
 
+  #gets the bottom coordinate for the patrol. checks 8 further coordinates if wall found.
   def getBottom(self, gameState):
     height = gameState.data.layout.height
     if self.red:
@@ -347,8 +352,7 @@ class DeffendAgent(CaptureAgent):
       minimum_distance = 0
     return minimum_distance
 
-  #Distance to nearest point of our area
-
+  #getDistanceNearestPointArea not working, so another function made to return nearest border coordinate
   def getNearestBorder(self, gameState):
       current_position = gameState.getAgentPosition(self.index)
       boundary_distance = 9999
@@ -360,6 +364,7 @@ class DeffendAgent(CaptureAgent):
               boundary_position = i
       return boundary_position
 
+  #Distance to nearest point of our area
   def getDistanceNearestPointArea(self, gameState):
     boundaries = self.boundaries
     current_state = gameState.getAgentState(self.index)
