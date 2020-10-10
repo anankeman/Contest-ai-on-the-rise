@@ -50,14 +50,8 @@ def createTeam(firstIndex, secondIndex, isRed,
 
 #-------------------------------------------------------------------------------------
 class AttackAgent(CaptureAgent):
-    """
-    A Dummy agent to serve as an example of the necessary agent structure.
-    You should look at baselineTeam.py for more details about how to
-    create an agent as this is the bare minimum.
-    """
 
     def registerInitialState(self, gameState):
-
         CaptureAgent.registerInitialState(self, gameState)
         self.count = 0
         self.boundaries = self.getBoundaries(gameState, gameState.data.layout, self.red)
@@ -68,7 +62,6 @@ class AttackAgent(CaptureAgent):
 
 
     def chooseAction(self, gameState):
-
         start = time.time()
 
         pos = gameState.getAgentPosition(self.index)
@@ -109,9 +102,6 @@ class AttackAgent(CaptureAgent):
         return path
 
     def getSuccessor(self, gameState, action):
-        """
-        Finds the next successor which is a grid position (location tuple).
-        """
         successor = gameState.generateSuccessor(self.index, action)
         pos = successor.getAgentState(self.index).getPosition()
         if pos != nearestPoint(pos):
@@ -252,7 +242,7 @@ class AttackAgent(CaptureAgent):
             features['minDistanceFood'] = self.getDistanceNearestFood(successor, pos)
             features['minDistanceOpponent'] = (1/ self.getOpponentsDistances(successor, pos))
             features['minDistanceCapsule'] = 0
-            features['minDistanceOurArea'] = 0#(self.getDistanceNearestPointArea(successor, pos)# + min_dist_food + self.initial_food - current_food)*(2-per)
+            features['minDistanceOurArea'] = 0 #(self.getDistanceNearestPointArea(successor, pos)# + min_dist_food + self.initial_food - current_food)*(2-per)
 
         weights = self.getWeights(goal)
         return features*weights
