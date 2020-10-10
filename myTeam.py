@@ -346,7 +346,7 @@ class DeffendAgent(AttackAgent):
             path = self.aStarSearch(gameState, 'getInvaders')
         # patrol added below
         # if no target, goes to the border, and then as long as agent is within manhattan dist of 5 goes on patrol
-        else:
+        elif self.target is None:
             border_dist = util.manhattanDistance(self.getNearestBorder(gameState), pos)
             if border_dist > 5:
                 self.target = self.getNearestBorder(gameState)
@@ -359,8 +359,8 @@ class DeffendAgent(AttackAgent):
                     self.target = self.top
                     path = self.aStarSearch(gameState, 'goCenter')
         # ----------------------------------
-        #else:
-        #    return Directions.STOP
+        else:
+            return Directions.STOP
         print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
         return path
     
