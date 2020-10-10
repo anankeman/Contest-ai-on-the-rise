@@ -519,7 +519,7 @@ class DefendAgent(AttackAgent):
             current_node = open_list.pop()
             current_pos = current_node[0].getAgentPosition(self.index)
             current_state, cost, path = current_node
-            if not current_pos in closed_list or cost + 1 < closed_list.get(current_pos):
+            if not current_pos in closed_list or cost < closed_list.get(current_pos):
                 if self.getGoal(goal, current_pos):
                     return path[0]
                 closed_list[current_pos] = cost
