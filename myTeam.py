@@ -208,6 +208,10 @@ class AttackAgent(CaptureAgent):
             else:
                 return self.getMazeDistance(pos, self.boundaries[0])
 
+    def monteCarlo(self, gameState):
+        path = gameState.getAgentPosition(self.index)
+        return path
+
     def aStarSearch(self, gameState, goal, maxSight = 60):
         """Search the node that has the lowest combined cost and heuristic first."""
         priorityQ = util.PriorityQueue()
