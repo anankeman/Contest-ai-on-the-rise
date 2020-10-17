@@ -58,7 +58,6 @@ class AttackAgent(CaptureAgent):
         self.halfway = gameState.data.layout.width//2
         food_list = self.getFood(gameState).asList()
         self.initial_food = len(food_list)
-        self.patrol = 'up'
 
 
 
@@ -66,20 +65,12 @@ class AttackAgent(CaptureAgent):
         start = time.time()
 
         pos = gameState.getAgentPosition(self.index)
-        print(pos)
-        print(self.boundaries)
-        if pos in self.boundaries[-3:]:
-            self.patrol = 'down'
-        if pos in self.boundaries[:3]:
-            self.patrol = 'up'
-        #print(gameState.getAgentDistances())
-        #count eaten food
+
         previous = self.getPreviousObservation()
         if previous is not None:
             if previous.hasFood(pos[0], pos[1]):
                 self.count += 1
             else:
-                # rest to zero when crossing the border
                 if (self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
                     self.count = 0
 
@@ -88,29 +79,25 @@ class AttackAgent(CaptureAgent):
         ghost = self.getOpponentsDistances(gameState, pos)
         border = self.getDistanceNearestPointArea(gameState, pos)
 
-        if False:#ghost < 7:
-            if False:#(self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
-                print("alternative"+str(self.red))
-                path = self.aStarSearch(gameState, 'alternative')
-            else:
-                capsule = self.getDistanceNearestCapsule(gameState, pos)
-                if capsule > border:
-                    print("go border cus ghost"+str(self.red))
-                    path = self.aStarSearch(gameState, 'getBorder')
-                else:
-                    print("go capsule"+str(self.red))
-                    path = self.aStarSearch(gameState, 'getCapsule')
-        else:
-            #Greedy approach
-            nextFood = self.getDistanceNearestFood(gameState, pos, True)
-            if (nextFood > border and self.count > 0):
-                print("go border"+str(self.red))
+        if ghost < 10:
+            capsule = self.getDistanceNearestCapsule(gameState, pos)
+
+            if capsule > border:
+                #print("go border cus ghost")
                 path = self.aStarSearch(gameState, 'getBorder')
             else:
-                print("go food"+str(self.red))
+                #print("go capsule")
+                path = self.aStarSearch(gameState, 'getCapsule')
+        else:
+            nextFood = self.getDistanceNearestFood(gameState, pos, True)
+            if nextFood > border and self.count > 0:
+                #print("go border")
+                path = self.aStarSearch(gameState, 'getBorder')
+            else:
+                #print("go food")
                 path = self.aStarSearch(gameState, 'getFood')
 
-        print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
+        #print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
 
         return path
 
@@ -136,33 +123,26 @@ class AttackAgent(CaptureAgent):
                 border[y] = (x, y)
         border= [i for i in border if i!=0]
         return border
-    
-    def bayes(self, noise, index):
-        previous = self.getPreviousObservation()
-        enemyPrior = previous.getAgentDistances()[index]
-        return (noise)/enemyPrior
 
 
     # Maze Distance to nearest enemy ghost
     def getOpponentsDistances(self, gameState, pos):
         enemies = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
-        ghost = [a.getPosition() for a in enemies if (a.scaredTimer < 2) and a.getPosition() is not None]
-        
+        ghost = [a.getPosition() for a in enemies if (not a.isPacman and a.scaredTimer < 2) and a.getPosition() is not None]
+
         if len(ghost) > 0:
-            #return distance to the closest ghost
+            #return distance to the closes ghost
             return min([self.getMazeDistance(pos, i) for i in ghost])
         else:
-            noise = min([gameState.getAgentDistances()[i] for i in self.getOpponents(gameState)])
-            return (noise+0.01) #999 #smooth value?
+            return 999 #smooth value?
 
     #Maze distance to the nearest food
-    def getDistanceNearestFood(self, gameState, pos, onlyOne = False):
+    def getDistanceNearestFood(self, gameState, pos, one = False):
         food = self.getFood(gameState).asList()
-        if onlyOne:
-            if len(food) == 0:
-                return 9999
+        if len(food) == 0:
+            return 0
+        if one:
             return min([self.getMazeDistance(pos, i) for i in food])
-        
         return self.closestPoint(pos, food, 0)
         #return min([self.getMazeDistance(pos, i) for i in food])
 
@@ -192,70 +172,53 @@ class AttackAgent(CaptureAgent):
         return min([self.getMazeDistance(pos, i) for i in self.boundaries])
 
 
-    def getGoal(self, goal, initialState, currentState, pos):
+    def getGoal(self, goal, initialState, finalState, count):
         if goal == "getCapsule":
-            if len(self.getCapsules(initialState))-len(self.getCapsules(currentState)) == 1:
+            capsules_list_init = self.getCapsules(initialState)
+            capsules_list_fin = self.getCapsules(finalState)
+            if len(capsules_list_init) - len(capsules_list_fin) == 1:
                 return True
-        elif goal == "getFood":
-            if len(self.getFood(initialState).asList())-len(self.getFood(currentState).asList()) == 1:
-                return True
-        elif goal == 'getBorder':
-            if pos in self.boundaries:
-                return True
-        elif goal == 'alternative':
-            if self.patrol == 'up':   
-                if pos in self.boundaries[-3:]:
-                    return True
             else:
-                if pos in self.boundaries[:3]:
-                    return True
-        else:
-            return False
-        
-    def getPatrol(self, pos):
-        if self.patrol == 'up':
-            return self.getMazeDistance(pos, self.boundaries[-1])
-        else:
-            return self.getMazeDistance(pos, self.boundaries[0])
-            
+                return False
+        if goal == "getFood" or goal == "getFood_Scared":
+            food_list_init = self.getFood(initialState).asList()
+            food_list_fin = self.getFood(finalState).asList()
+            if len(food_list_init) - len(food_list_fin) == 1:
+                return True
+            else:
+                return False
 
-    def aStarSearch(self, gameState, goal, maxSight = 60):
-        """Search the node that has the lowest combined cost and heuristic first."""
+    def aStarSearch(self, gameState, goal, maxSight = 7):
         priorityQ = util.PriorityQueue()
-        mark = [] #mark visited states  
+        mark = [] #mark visited states
         case = []
-        initialState = gameState
         priorityQ.push((gameState, [((0),"start")], 0), 0)
-       
+
         bestG = dict()
         while not priorityQ.isEmpty() and (maxSight > 0):
             currentState, answer, currentCost = priorityQ.pop()
-            
-            
+            case = answer
+
             if currentState not in mark or currentCost < bestG.get(currentState):
                 mark.append(currentState)
-                case = answer
                 bestG[currentState] = currentCost
-                pos = currentState.getAgentState(self.index).getPosition()
-                if self.getGoal(goal,initialState, currentState, pos):                    
-                    if len(answer) > 1:
-                        print([i[1] for i in answer[1:]], "answer")
-                        return answer[1][1]
-                    else:
-                        return Directions.STOP
-                   
+
+                #if len(self.getFood(currentState).asList())== 0:
+                if self.getScore(gameState) == self.initial_food:
+                    return answer[1][1] # goal part, change goal to score
                 maxSight -= 1
+
                 actions = currentState.getLegalActions(self.index)
-                
+                pos = currentState.getAgentState(self.index).getPosition()
                 for action in actions:
                     nextState = self.getSuccessor(currentState, action)
                     nextCost = currentCost + 1
                     heu = self.heuristic_Astar(nextState, goal)
-                    print('heu: '+str(heu))
+                    #print('heu: '+str(heu))
                     currentPath = list(answer)
                     currentPath.append((pos, action))
                     priorityQ.push((nextState, currentPath, currentCost), heu+nextCost)
-        print([print(i[1]) for i in case[1:]], "case")
+
         return case[1][1]
 
 
@@ -279,12 +242,7 @@ class AttackAgent(CaptureAgent):
             features['minDistanceFood'] = self.getDistanceNearestFood(successor, pos)
             features['minDistanceOpponent'] = (1/ self.getOpponentsDistances(successor, pos))
             features['minDistanceCapsule'] = 0
-            features['minDistanceOurArea'] = self.getDistanceNearestPointArea(successor, pos) ## + min_dist_food + self.initial_food - current_food)*(2-per)
-        else:
-            features['minDistanceFood'] = self.getPatrol(pos)
-            features['minDistanceOpponent'] = (1/ self.getOpponentsDistances(successor, pos))
-            features['minDistanceCapsule'] = 0
-            features['minDistanceOurArea'] = 0
+            features['minDistanceOurArea'] = 0 #(self.getDistanceNearestPointArea(successor, pos)# + min_dist_food + self.initial_food - current_food)*(2-per)
 
         weights = self.getWeights(goal)
         return features*weights
@@ -302,15 +260,9 @@ class AttackAgent(CaptureAgent):
                                             'minDistanceOurArea': 1}
         elif goal == "getFood":
             return {'minDistanceFood': 1,
-                                            'minDistanceOpponent': 40,
-                                            'minDistanceCapsule': 0,
-                                            'minDistanceOurArea': 1}
-        else:
-            return {'minDistanceFood': 1,
                                             'minDistanceOpponent': 30,
                                             'minDistanceCapsule': 0,
                                             'minDistanceOurArea': 0}
-            
 
 #-----------------------------------------------------------------------------------
 
@@ -324,6 +276,7 @@ class DefendAgent(AttackAgent):
         self.boundaries = self.getBoundaries(gameState, gameState.data.layout, self.red)
         food_list = self.getFoodYouAreDefending(gameState).asList()
         self.initial_food = len(food_list)
+        self.centerOurFood = self.getCenterOurFood(gameState)
         self.scared = gameState.getAgentState(self.index).scaredTimer
         self.halfway = gameState.data.layout.width//2
         self.top = self.getTop(gameState)
@@ -334,6 +287,7 @@ class DefendAgent(AttackAgent):
         start = time.time()
         self.scared = gameState.getAgentState(self.index).scaredTimer
         pos = gameState.getAgentPosition(self.index)
+        self.centerOurFood = self.getCenterOurFood(gameState)
         previous = self.getPreviousObservation()
         food_list_previous = []
         if previous is not None:
@@ -532,15 +486,15 @@ class DefendAgent(AttackAgent):
                                             'minDistanceOurArea': 1}
 
     def getNearestBorder(self, gameState):
-        current_position = gameState.getAgentPosition(self.index)
-        boundary_distance = 9999
-        boundary_position = None
-        for i in self.boundaries:
-                dist = self.getMazeDistance(i, current_position)
-                if dist < boundary_distance:
-                        boundary_distance = dist
-                        boundary_position = i
-        return boundary_position
+            current_position = gameState.getAgentPosition(self.index)
+            boundary_distance = 9999
+            boundary_position = None
+            for i in self.boundaries:
+                    dist = self.getMazeDistance(i, current_position)
+                    if dist < boundary_distance:
+                            boundary_distance = dist
+                            boundary_position = i
+            return boundary_position
 
     #defensive Astar added with goal state as target
     def aStarSearch(self, gameState, goal):
@@ -557,10 +511,11 @@ class DefendAgent(AttackAgent):
             current_state, cost, path = current_node
             if not current_pos in closed_list or cost < closed_list.get(current_pos):
                 if self.getGoal(goal, current_pos):
-                    if len(path) > 0:
+                    if len(path) > 1:
                         return path[0]
                     else:
                         return Directions.STOP
+                    
                 closed_list[current_pos] = cost
                 actions = current_state.getLegalActions(self.index)
                 for action in actions:

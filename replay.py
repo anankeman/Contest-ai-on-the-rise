@@ -14,7 +14,7 @@ import re
 
 # Settings
 REPLAYS_FOLDER = "replays"
-PYTHON_BIN = "python3.6"
+PYTHON_BIN = "python"
 
 # Constants
 DIR_SCRIPT = sys.path[0]
@@ -58,7 +58,11 @@ def generate_cmd(replay_path):
     blue = "Blue"
     if match and match.groups() and len(match.groups()) > 1:
         red, blue = match.groups()
-    return f'{PYTHON_BIN} {os.path.join(DIR_SCRIPT, "capture.py")} --red-name {red} --blue-name {blue} --replay {replay_path} --delay-step {args.delay_step}'
+        
+    path1 = os.path.join(DIR_SCRIPT, "capture.py")
+    path1 = '"' + path1 + '"' #.replace(" ", '\ ')
+    replay_path =  '"' + replay_path + '"'
+    return f'{PYTHON_BIN} {path1} --red-name {red} --blue-name {blue} --replay {replay_path} --delay-step {args.delay_step}'
 
 def main():
     if args.file:
