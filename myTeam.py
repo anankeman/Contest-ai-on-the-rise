@@ -209,7 +209,7 @@ class AttackAgent(CaptureAgent):
                 return self.getMazeDistance(pos, self.boundaries[0])
 
     def monteCarlo(self, gameState):
-        
+        path = True
         path = gameState.getAgentPosition(self.index)
         return path
 
