@@ -108,12 +108,12 @@ class AttackAgent(CaptureAgent):
 
         return path
 
-    def getSuccessor(self, gameState, action):
-        successor = gameState.generateSuccessor(self.index, action)
-        pos = successor.getAgentState(self.index).getPosition()
+    def getSuccessor(self, gameState, action, index):
+        successor = gameState.generateSuccessor(index, action)
+        pos = successor.getAgentState(index).getPosition()
         if pos != nearestPoint(pos):
             # Only half a grid position was covered
-            return successor.generateSuccessor(self.index, action)
+            return successor.generateSuccessor(index, action)
         else:
             return successor
 #-------------------------------------------------------------------------------------
@@ -240,7 +240,7 @@ class AttackAgent(CaptureAgent):
                 actions = currentState.getLegalActions(self.index)
                 
                 for action in actions:
-                    nextState = self.getSuccessor(currentState, action)
+                    nextState = self.getSuccessor(currentState, action, self.index)
                     nextCost = currentCost + 1
                     heu = self.heuristic_Astar(nextState, goal)
                     #print('heu: '+str(heu))
@@ -556,7 +556,7 @@ class DefendAgent(AttackAgent):
                 closed_list[current_pos] = cost
                 actions = current_state.getLegalActions(self.index)
                 for action in actions:
-                    successor = self.getSuccessor(current_state, action)
+                    successor = self.getSuccessor(current_state, action, self.index)
                     new_path = []
                     for i in path:
                         new_path.append(i)
@@ -578,32 +578,11 @@ class DefendAgent(AttackAgent):
         else:
           return False
 
-class MinimaxAgent(CaptureAgent):
-    """
-    A Dummy agent to serve as an example of the necessary agent structure.
-    You should look at baselineTeam.py for more details about how to
-    create an agent as this is the bare minimum.
-    """
+class MinimaxAgent(AttackAgent):
+
 
     def registerInitialState(self, gameState):
-        """
-        This method handles the initial setup of the
-        agent to populate useful fields (such as what team
-        we're on).
 
-        A distanceCalculator instance caches the maze distances
-        between each pair of positions, so your agents can use:
-        self.distancer.getDistance(p1, p2)
-
-        IMPORTANT: This method may run for at most 15 seconds.
-        """
-
-        '''
-        Make sure you do not delete the following line. If you would like to
-        use Manhattan distances instead of maze distances in order to save
-        on initialization time, please take a look at
-        CaptureAgent.registerInitialState in captureAgents.py.
-        '''
         CaptureAgent.registerInitialState(self, gameState)
         '''
         Your initialization code goes here, if you need any.
@@ -612,18 +591,36 @@ class MinimaxAgent(CaptureAgent):
         self.depth = 5
         #Index of enemies in the Map
         self.indexEnemies = self.getOpponents(gameState)
+        self.latestEnemyState = None
 
-    # For PacMan the system maximized the Utility. Choose action based on legal actions
+    #return the index of the closest opponent at sight and not scared
+    def getClosestOpponent(self, gameState):
+        pos = gameState.getAgentPosition(self.index)
+        enemies = [(i, gameState.getAgentPosition(i)) for i in self.getOpponents(gameState) if gameState.getAgentState(i).scaredTimer < 3]
+        distance = {i: self.getMazeDistance(pos, p) for i, p in enemies if p is not None}
+        if len(distance):
+            minD = min(distance, key = lambda k: distance[k])
+            if distance[minD] < 7:
+                return minD 
+        else:
+            return None
+
+# For PacMan the system maximized the Utility. Choose action based on legal actions
     def chooseAction(self, gameState):
+        start = time.time()
         maxDepth = self.depth
+        self.indexEnemies = self.getClosestOpponent(gameState)
+        self.latestEnemyState = None
 
         actionValues = util.Counter()
         for action in gameState.getLegalActions(self.index):
-                successorGameState = getSuccessor(self.index, gameState, action)
-                actionValues[action] = self.getEnemies(successorGameState, self.index, maxDepth - 1)
+            successorGameState = self.getSuccessor(gameState, action, self.index)
+            actionValues[action] = self.minimaxFunc(successorGameState, maxDepth -1,-float('Inf'),float('Inf'),True)
         print(actionValues)
         action = actionValues.argMax()
         print(action)
+        print('eval time for minimax %d: %.4f' % (self.index, time.time() - start))
+        self.debugClear()
         return action
 
     '''
@@ -639,97 +636,127 @@ class MinimaxAgent(CaptureAgent):
     - Maybe include scared time
     '''
     def evaluationFunction(self, currentGameState):
-                """
-                """
-                # Useful information you can extract from a GameState (pacman.py)
-                successorGameState = currentGameState
-                newPos = successorGameState.getAgentPosition(self.index)
-                features = util.Counter()
+        """
+        """
+        # Useful information you can extract from a GameState (pacman.py)
+        successorGameState = currentGameState
+        pos = successorGameState.getAgentPosition(self.index)
+        features = util.Counter()
 
-                # Nearest food distance
-                newFood_list = self.getFood(successorGameState).asList()
-                if newFood_list:
-                        posFood_list = [self.getMazeDistance(newPos, newFood) for newFood in newFood_list]
-                        features['distanceToFood'] = min(posFood_list)
-                        averageFood = sum(posFood_list)/len(posFood_list)
+        # Nearest enemy distance
+        
+        if self.latestEnemyState is not None:
+            opponentLateState = self.latestEnemyState.getAgentPosition(self.indexEnemies)
+            self.debugDraw(opponentLateState, [1,1,1])
+            minPosEnemy = self.getMazeDistance(pos, opponentLateState)
+        else:
+            minPosEnemy = 0
+        '''
+        newOpponentPosition = [successorGameState.getAgentState(x).getPosition() for x in self.indexEnemies]
+        posEnemy_list = []
+        for newOpponent in newOpponentPosition:
+            if newOpponent is not None:
+                posOpponent= self.getMazeDistance(pos, newOpponent)
+                posEnemy_list.append(posOpponent)
+        if posEnemy_list:
+            minPosEnemy = min(posEnemy_list)
+            print(min(posEnemy_list))
+        else:
+            minPosEnemy = 0
+        '''
+        #newOpponentstates = [successorGameState.getAgentState(x) for x in self.indexEnemies]
+        #newScaredTimes = [ghostState.scaredTimer for ghostState in newOpponentstates]
+        #minScaredTime = min(newScaredTimes)
 
-                # Nearest capsule distance and score capsule
-                newCapsules_list = self.getCapsules(successorGameState)
-                if len(newCapsules_list) > 0:
-                        posCapsule_list = [self.getMazeDistance(newPos, newCapsule) for newCapsule in newCapsules_list]
-                        minPosCapsule = min(posCapsule_list)
-                        features['successorCapsule'] = len(posCapsule_list)
-                else:
-                        minPosCapsule = 0
-                        features['successorCapsule'] = 0
+        # Reflects if the new state has less food in the map
+        features['distanceToFood'] = self.getDistanceNearestFood(successorGameState, pos)
+        features['eatenFood'] = 0#len(newFood_list)
+        features['distanceToEnemy'] = minPosEnemy
+        features['distanceToCapsule'] = 0#self.getDistanceNearestCapsule(successorGameState, pos)
+        features['successorCapsule'] = 0
+        # Reflects if the new state scores
+        features['successorScore']: 0#successorGameState.getScore()
 
-                features['distanceToCapsule'] = minPosCapsule
+        
+        weights = self.getWeights()
+        self.debugDraw(pos, [1,0,0])
 
-                # Nearest enemy distance
-                newOpponentPosition = [successorGameState.getAgentState(x).getPosition() for x in self.indexEnemies]
-                posEnemy_list = []
-                for newOpponent in newOpponentPosition:
-                        if newOpponent is not None:
-                                posOpponent= self.getMazeDistance(newPos, newOpponent)
-                                posEnemy_list.append(posOpponent)
-                if posEnemy_list:
-                        minPosEnemy =    min(posEnemy_list)
-                        print(min(posEnemy_list))
-                else:
-                        minPosEnemy = 0
-                features['distanceToEnemy'] = minPosEnemy
-                newOpponentstates = [successorGameState.getAgentState(x) for x in self.indexEnemies]
-                newScaredTimes = [ghostState.scaredTimer for ghostState in newOpponentstates]
-                minScaredTime = min(newScaredTimes)
-
-                # Reflects if the new state has less food in the map
-                features['eatenFood'] = len(newFood_list)
-
-                # Reflects if the new state scores
-                features['successorScore']: successorGameState.getScore()
-                weights = self.getWeights()
-
-                return features * weights
+        return features * weights
 
     #Maximize utility of Pacman based on the evaluation and the available action in the current state
     def getPacman(self, gameState, depth):
-            if depth == 0:
-                return self.evaluationFunction(gameState)
-            nextAgentIndex = self.index
-            score_list = [self.getEnemies(getSuccessor(nextAgentIndex, gameState, action), nextAgentIndex, depth - 1) for action in gameState.getLegalActions(nextAgentIndex)]
-            return max(score_list)
+        if depth == 0:
+            return self.evaluationFunction(gameState)
+        nextAgentIndex = self.index
+        score_list = [self.getEnemies(getSuccessor(nextAgentIndex, gameState, action), nextAgentIndex, depth - 1) for action in gameState.getLegalActions(nextAgentIndex)]
+        return max(score_list)
+    
+    #
+    def minimaxFunc(self, gameState, depth, alpha, beta, player):
+        if depth == 0:
+            return self.evaluationFunction(gameState)
+        if player:
+            maxEval = -float('Inf')
+            for action in gameState.getLegalActions(self.index):
+                succ = self.getSuccessor(gameState, action, self.index)
+                enemies = self.indexEnemies
+                if enemies is not None:
+                    currentEval = self.minimaxFunc(succ, depth-1, alpha, beta, False)
+                else:
+                    currentEval = self.minimaxFunc(succ, depth-1, alpha, beta, True)
+                maxEval = max(maxEval, currentEval)
+                alpha = max(alpha, currentEval)
+                if beta <= alpha:
+                    break
+            return maxEval
+        else:
+            minEval = float('Inf')
+            for action in gameState.getLegalActions(self.indexEnemies):
+                succ = self.getSuccessor(gameState, action, self.indexEnemies)
+                self.latestEnemyState = succ
+                currentEval = self.minimaxFunc(succ, depth-1, alpha, beta, True)
+                minEval = min(minEval, currentEval)
+                beta = min(beta, currentEval)
+                if beta <= alpha:
+                    break
+            return minEval
+            
 
     #Minimize utility of Ghosts based on the evaluation and the available action in the current state
     def getEnemies(self, gameState, indexGhost, depth):
         if depth == 0:
-                return self.evaluationFunction(gameState)
-        if indexGhost == self.index:
-                nextAgentIndex = self.indexEnemies[0]
-                enemyState = gameState.getAgentState(nextAgentIndex).getPosition()
-                if enemyState is not None:
-                        score_list = [self.getEnemies(getSuccessor(nextAgentIndex, gameState, action), nextAgentIndex, depth - 1) for action in gameState.getLegalActions(nextAgentIndex)]
-                        return min(score_list)
-                else:
-                        return self.getPacman(gameState, depth)
-        elif indexGhost == self.indexEnemies[0]:
-                nextAgentIndex = self.indexEnemies[1]
-                enemyState = gameState.getAgentState(nextAgentIndex).getPosition()
-                if enemyState is not None:
-                        score_list = [self.getPacman(getSuccessor(nextAgentIndex, gameState, action), depth - 1) for action in gameState.getLegalActions(nextAgentIndex)]
-                        return min(score_list)
-                else:
-                        return self.getPacman(gameState, depth)
-        else:
+            return self.evaluationFunction(gameState)
+        if indexGhost == self.index: # if am player
+            nextAgentIndex = self.indexEnemies[0]
+            enemyState = gameState.getAgentState(nextAgentIndex).getPosition()
+            
+            if enemyState is not None:
+                for action in gameState.getLegalActions(nextAgentIndex):
+                    currentEval = self.getEnemies(getSuccessor(nextAgentIndex, gameState, action), nextAgentIndex, depth - 1)
+                    
+                    score_list = [self.getEnemies(getSuccessor(nextAgentIndex, gameState, action), nextAgentIndex, depth - 1) for action in gameState.getLegalActions(nextAgentIndex)]
+                return min(score_list)
+            else:
                 return self.getPacman(gameState, depth)
+        elif indexGhost == self.indexEnemies[0]:
+            nextAgentIndex = self.indexEnemies[1]
+            enemyState = gameState.getAgentState(nextAgentIndex).getPosition()
+            if enemyState is not None:
+                score_list = [self.getPacman(getSuccessor(nextAgentIndex, gameState, action), depth - 1) for action in gameState.getLegalActions(nextAgentIndex)]
+                return min(score_list)
+            else:
+                return self.getPacman(gameState, depth)
+        else:
+            return self.getPacman(gameState, depth)
 
     # Weights for the features, the idea is to tune in this weights for the features defined above
     def getWeights(self):
-            return {'successorScore': -1000,
-                            'distanceToFood': -1,
-                            'distanceToEnemy': 100,
-                            'distanceToCapsule': -1,
-                            'successorCapsule': -10,
-                            'eatenFood': -100}
+        return {'successorScore': -1000,
+                    'distanceToFood': -1,
+                    'distanceToEnemy': 100,
+                    'distanceToCapsule': -1,
+                    'successorCapsule': -10,
+                    'eatenFood': -100}
 
 # Gets succesor state based on agent and the chosen action
 def getSuccessor(index, gameState, action):
@@ -739,7 +766,7 @@ def getSuccessor(index, gameState, action):
     successorGameState = gameState.generateSuccessor(index, action)
     pos = successorGameState.getAgentState(index).getPosition()
     if pos is None:
-            return gameState
+        return gameState
     elif pos != nearestPoint(pos):
         # Only half a grid position was covered
         return successorGameState.generateSuccessor(index, action)
