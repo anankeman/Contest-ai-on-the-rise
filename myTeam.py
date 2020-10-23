@@ -63,10 +63,11 @@ class AttackAgent(CaptureAgent):
 
 
     def chooseAction(self, gameState):
+
         start = time.time()
 
         pos = gameState.getAgentPosition(self.index)
-        
+
         #count eaten food
         previous = self.getPreviousObservation()
         if previous is not None:
@@ -151,7 +152,7 @@ class AttackAgent(CaptureAgent):
                 return 9999
 
             return min([self.getMazeDistance(pos, i) for i in food])
-        
+
         return self.closestPoint(pos, food, 0)
         #return min([self.getMazeDistance(pos, i) for i in food])
 
@@ -193,7 +194,7 @@ class AttackAgent(CaptureAgent):
                 return True
         else:
             return False
-        
+
     def getPatrol(self, pos):
         if self.patrol == 'up':
             if pos in self.boundaries[-3]:
@@ -216,29 +217,29 @@ class AttackAgent(CaptureAgent):
     def aStarSearch(self, gameState, goal, maxSight = 60):
         """Search the node that has the lowest combined cost and heuristic first."""
         priorityQ = util.PriorityQueue()
-        mark = [] #mark visited states  
+        mark = [] #mark visited states
         case = []
         initialState = gameState
         priorityQ.push((gameState, [((0),"start")], 0), 0)
-       
+
         bestG = dict()
         while not priorityQ.isEmpty() and (maxSight > 0):
             currentState, answer, currentCost = priorityQ.pop()
             case = answer
-            
+
             if currentState not in mark or currentCost < bestG.get(currentState):
                 mark.append(currentState)
                 bestG[currentState] = currentCost
                 pos = currentState.getAgentState(self.index).getPosition()
-                if self.getGoal(goal,initialState, currentState, pos):                    
+                if self.getGoal(goal,initialState, currentState, pos):
                     if len(answer) > 1:
                         return answer[1][1]
                     else:
                         return Directions.STOP
-                   
+
                 maxSight -= 1
                 actions = currentState.getLegalActions(self.index)
-                
+
                 for action in actions:
                     nextState = self.getSuccessor(currentState, action)
                     nextCost = currentCost + 1
@@ -247,7 +248,7 @@ class AttackAgent(CaptureAgent):
                     currentPath = list(answer)
                     currentPath.append((pos, action))
                     priorityQ.push((nextState, currentPath, currentCost), heu+nextCost)
-        
+
         return case[1][1]
 
 
@@ -302,7 +303,7 @@ class AttackAgent(CaptureAgent):
                                             'minDistanceOpponent': 30,
                                             'minDistanceCapsule': 0,
                                             'minDistanceOurArea': 0}
-            
+
 
 #-----------------------------------------------------------------------------------
 
@@ -323,6 +324,7 @@ class DefendAgent(AttackAgent):
         self.goingUp = False
 
     def chooseAction(self, gameState):
+
         start = time.time()
         self.scared = gameState.getAgentState(self.index).scaredTimer
         pos = gameState.getAgentPosition(self.index)
@@ -355,7 +357,10 @@ class DefendAgent(AttackAgent):
                 path = self.aStarSearch(gameState, 'getInvaders_scared')
 
         elif len(food_list_previous) - len(food_list_current) > 0:
-            self.target = list(set(food_list_previous) - set(food_list_current))[0]
+            food_eaten = list(set(food_list_previous) - set(food_list_current))[0]
+            print("food eaten", food_eaten)
+            closest_food = self.next_food(gameState, food_eaten)
+            self.target = closest_food
             path = self.aStarSearch(gameState, 'getFood')
 
         elif self.target is not None:
@@ -378,6 +383,16 @@ class DefendAgent(AttackAgent):
 
         #print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
         return path
+
+    #calculates which food is closest to a given point
+    def next_food(self, gameState, eaten):
+        nearest_food = None
+        best_d = 999
+        for i in self.getFoodYouAreDefending(gameState).asList():
+            if self.getMazeDistance(eaten, i) < best_d:
+                nearest_food = i
+                best_d = self.getMazeDistance(eaten, i)
+        return nearest_food
 
     #gets top coordinate for patrol. checks 8 further coordinates if wall found.
     def getTop(self, gameState):
@@ -417,7 +432,6 @@ class DefendAgent(AttackAgent):
         current_position = pos
         opponents_index_list = self.getOpponents(gameState)
         opponents_agent_list = [gameState.getAgentState(x) for x in opponents_index_list]
-
         for oponent_agent in opponents_agent_list:
             if oponent_agent.isPacman:
                 opponent_pos = oponent_agent.getPosition()
@@ -488,16 +502,17 @@ class DefendAgent(AttackAgent):
     def heuristic_Astar(self, successor, goal):
         features = util.Counter()
         pos = successor.getAgentPosition(self.index)
+        border_dist = self.getMazeDistance(self.getNearestBorder(successor), pos)
         if goal == "getInvaders" or goal == "getInvaders_scared":
-            features['minDistanceFood'] = 99
+            features['minDistanceFood'] = 0
             features['minDistanceOpponent'] = self.getExactInvader(successor, pos)
-            features['minDistanceCapsule'] = 99
-            features['minDistanceOurArea'] = 99
+            features['minDistanceCapsule'] = 0
+            features['minDistanceOurArea'] = 0
         elif goal == "getFood":
-            features['minDistanceFood'] = self.getExactInvader(successor, pos)
-            features['minDistanceOpponent'] = 99
-            features['minDistanceCapsule'] = 99
-            features['minDistanceOurArea'] = 99
+            features['minDistanceFood'] = self.getMazeDistance(pos, self.target)/2
+            features['minDistanceOpponent'] = 0
+            features['minDistanceCapsule'] = 0
+            features['minDistanceOurArea'] = border_dist
         else: #goal == "goCenter"
             features['minDistanceFood'] = self.getMazeDistance(pos, self.target)
             features['minDistanceOpponent'] = 99
