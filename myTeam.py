@@ -588,7 +588,7 @@ class MinimaxAgent(AttackAgent):
         Your initialization code goes here, if you need any.
         '''
         #Depth of the MiniMax model
-        self.depth = 5
+        self.depth = 4
         #Index of enemies in the Map
         self.indexEnemies = self.getOpponents(gameState)
         self.latestEnemyState = None
@@ -620,7 +620,7 @@ class MinimaxAgent(AttackAgent):
         action = actionValues.argMax()
         print(action)
         print('eval time for minimax %d: %.4f' % (self.index, time.time() - start))
-        self.debugClear()
+        #self.debugClear()
         return action
 
     '''
@@ -647,7 +647,7 @@ class MinimaxAgent(AttackAgent):
         
         if self.latestEnemyState is not None:
             opponentLateState = self.latestEnemyState.getAgentPosition(self.indexEnemies)
-            self.debugDraw(opponentLateState, [1,1,1])
+            #self.debugDraw(opponentLateState, [1,1,1])
             minPosEnemy = self.getMazeDistance(pos, opponentLateState)
         else:
             minPosEnemy = 0
@@ -679,7 +679,7 @@ class MinimaxAgent(AttackAgent):
 
         
         weights = self.getWeights()
-        self.debugDraw(pos, [1,0,0])
+        #self.debugDraw(pos, [1,0,0])
 
         return features * weights
 
