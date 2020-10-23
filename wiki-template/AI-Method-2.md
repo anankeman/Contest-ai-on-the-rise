@@ -14,7 +14,7 @@ Your notes about this part of the project, including acknowledgement, comments, 
 ## Governing Strategy Tree  
 
 ### Motivation  
-
+![Demo 1](images/pacman1.gif)
 
 [Back to top](#table-of-contents)
 
