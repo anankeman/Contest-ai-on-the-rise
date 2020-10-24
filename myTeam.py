@@ -588,10 +588,13 @@ class MinimaxAgent(AttackAgent):
         Your initialization code goes here, if you need any.
         '''
         #Depth of the MiniMax model
-        self.depth = 4
+        self.depth = 5
         #Index of enemies in the Map
         self.indexEnemies = self.getOpponents(gameState)
         self.latestEnemyState = None
+        self.boundaries = self.getBoundaries(gameState, gameState.data.layout, self.red)
+        print(self.boundaries)
+        
 
     #return the index of the closest opponent at sight and not scared
     def getClosestOpponent(self, gameState):
@@ -608,10 +611,10 @@ class MinimaxAgent(AttackAgent):
 # For PacMan the system maximized the Utility. Choose action based on legal actions
     def chooseAction(self, gameState):
         start = time.time()
-        maxDepth = self.depth
         self.indexEnemies = self.getClosestOpponent(gameState)
         self.latestEnemyState = None
-
+        #self.debugDraw(self.boundaries, [1,1,1])
+        '''
         actionValues = util.Counter()
         for action in gameState.getLegalActions(self.index):
             successorGameState = self.getSuccessor(gameState, action, self.index)
@@ -619,9 +622,13 @@ class MinimaxAgent(AttackAgent):
         print(actionValues)
         action = actionValues.argMax()
         print(action)
-        print('eval time for minimax %d: %.4f' % (self.index, time.time() - start))
-        #self.debugClear()
+        
         return action
+        '''
+        step, value = self.minimaxFunc(gameState, self.depth -1,-float('Inf'),float('Inf'),True)
+        print('eval time for minimax %d: %.4f' % (self.index, time.time() - start))
+        self.debugClear()
+        return step
 
     '''
     Get the utility of a game state based on certain features 
@@ -647,7 +654,7 @@ class MinimaxAgent(AttackAgent):
         
         if self.latestEnemyState is not None:
             opponentLateState = self.latestEnemyState.getAgentPosition(self.indexEnemies)
-            #self.debugDraw(opponentLateState, [1,1,1])
+            self.debugDraw(opponentLateState, [1,1,1])
             minPosEnemy = self.getMazeDistance(pos, opponentLateState)
         else:
             minPosEnemy = 0
@@ -667,19 +674,22 @@ class MinimaxAgent(AttackAgent):
         #newOpponentstates = [successorGameState.getAgentState(x) for x in self.indexEnemies]
         #newScaredTimes = [ghostState.scaredTimer for ghostState in newOpponentstates]
         #minScaredTime = min(newScaredTimes)
+        disFood = self.getDistanceNearestFood(successorGameState, pos)
+        #if disFood == 0:
+        #    disFood = -9999
 
         # Reflects if the new state has less food in the map
-        features['distanceToFood'] = self.getDistanceNearestFood(successorGameState, pos)
+        features['distanceToFood'] = disFood#self.getDistanceNearestFood(successorGameState, pos)
         features['eatenFood'] = 0#len(newFood_list)
         features['distanceToEnemy'] = minPosEnemy
         features['distanceToCapsule'] = 0#self.getDistanceNearestCapsule(successorGameState, pos)
         features['successorCapsule'] = 0
         # Reflects if the new state scores
-        features['successorScore']: 0#successorGameState.getScore()
+        features['successorScore'] =  self.getDistanceNearestPointArea(successorGameState, pos)#abs(successorGameState.getScore())
 
         
         weights = self.getWeights()
-        #self.debugDraw(pos, [1,0,0])
+        self.debugDraw(pos, [1,0,0])
 
         return features * weights
 
@@ -694,32 +704,38 @@ class MinimaxAgent(AttackAgent):
     #
     def minimaxFunc(self, gameState, depth, alpha, beta, player):
         if depth == 0:
-            return self.evaluationFunction(gameState)
+            return None, self.evaluationFunction(gameState)
         if player:
             maxEval = -float('Inf')
+            finalStep = None
             for action in gameState.getLegalActions(self.index):
                 succ = self.getSuccessor(gameState, action, self.index)
                 enemies = self.indexEnemies
                 if enemies is not None:
-                    currentEval = self.minimaxFunc(succ, depth-1, alpha, beta, False)
+                    step, currentEval = self.minimaxFunc(succ, depth-1, alpha, beta, False)
                 else:
-                    currentEval = self.minimaxFunc(succ, depth-1, alpha, beta, True)
+                    step, currentEval = self.minimaxFunc(succ, depth-1, alpha, beta, True)
+                if currentEval > maxEval:
+                    finalStep = action
                 maxEval = max(maxEval, currentEval)
                 alpha = max(alpha, currentEval)
                 if beta <= alpha:
                     break
-            return maxEval
+            return finalStep, maxEval
         else:
             minEval = float('Inf')
+            finalStep = None
             for action in gameState.getLegalActions(self.indexEnemies):
                 succ = self.getSuccessor(gameState, action, self.indexEnemies)
                 self.latestEnemyState = succ
-                currentEval = self.minimaxFunc(succ, depth-1, alpha, beta, True)
+                step, currentEval = self.minimaxFunc(succ, depth-1, alpha, beta, True)
+                if currentEval < minEval:
+                    finalStep = action
                 minEval = min(minEval, currentEval)
                 beta = min(beta, currentEval)
                 if beta <= alpha:
                     break
-            return minEval
+            return finalStep, minEval
             
 
     #Minimize utility of Ghosts based on the evaluation and the available action in the current state
@@ -751,7 +767,7 @@ class MinimaxAgent(AttackAgent):
 
     # Weights for the features, the idea is to tune in this weights for the features defined above
     def getWeights(self):
-        return {'successorScore': -1000,
+        return {'successorScore': -0.1,
                     'distanceToFood': -1,
                     'distanceToEnemy': 100,
                     'distanceToCapsule': -1,
