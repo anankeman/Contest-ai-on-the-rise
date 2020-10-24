@@ -667,7 +667,7 @@ class MinimaxAgent(AttackAgent):
         features['distanceToFood'] = disFood#self.getDistanceNearestFood(succesor, pos)
         features['eatenFood'] = 0#len(newFood_list)
         features['distanceToEnemy'] = minPosEnemy
-        features['distanceToCapsule'] = self.getDistanceNearestCapsule(succesor, pos)
+        features['distanceToCapsule'] = 0#self.getDistanceNearestCapsule(succesor, pos)
         features['successorCapsule'] = 0#abs(succesor.getScore())
         # Reflects if the new state scores
         #if succesor.isOver():
