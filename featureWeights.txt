@@ -1,1 +1,0 @@
-{'distanceToFood': -28.002835260690993, 'distanceToEnemy': -0.5782565440667258, 'distanceToCapsule': -7.4997891584034955, 'eatenFood': -125.3032676975276, 'scored': 100.0}

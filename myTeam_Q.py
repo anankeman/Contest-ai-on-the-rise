@@ -82,11 +82,12 @@ class ApproximateQAgent(CaptureAgent):
     #Discount rate
     self.gamma = 0.8
     #Threshold
-    self.epsilon = 0.7
+    self.epsilon = 0.5
     # weights of features
     try:
       with open('featureWeights.txt', "r") as file:
         self.weights = eval(file.read())
+        file.close()
     except:
       self.weights = self.getWeights()
 
@@ -96,17 +97,21 @@ class ApproximateQAgent(CaptureAgent):
     probability = util.flipCoin(self.epsilon)
     if probability:
       action = random.choice(actions)
+
     else:
       action = self.getPolicy(gameState)
-
+    #self.update(gameState, action)
     return action
 
   def getWeights(self):
-    return {'distanceToFood':  -2, 'distanceToEnemy': 2, 'distanceToCapsule': -4, 'eatenFood': 10, 'scored': 100}
-    #return {'distanceToFood': 0, 'distanceToEnemy': 0, 'distanceToCapsule': 0, 'eatenFood': 0, 'scored': 0}
+    return {'distanceToFood':  -8, 'distanceToEnemy': 10, 'distanceToCapsule': -10, 'scored': 100, 'enemyRadar': -100, 'stop': -100, 'foodLeft': -5}
+    #{'distanceToFood': -1.79860243631401, 'distanceToEnemy': 3.079869160216298, 'distanceToCapsule': -0.29299771938486846, 'scored': 42.736656524685465, 'enemyRadar': -99.92962494140701, 'stop': -81.56425788286805, 'foodLeft': -4.816807737706834}
+    #{'distanceToFood': -1.1480349373521266, 'distanceToEnemy': -1.8946601365929547, 'distanceToCapsule': -0.7064242777388614, 'scored': 19.40290051060966, 'enemyRadar': -99.71284329473492, 'stop': -66.43243035410164, 'foodLeft': -2.8920070226206036}
+    #{'distanceToFood': -1.1480349373521266, 'distanceToEnemy': -1.8946601365929547, 'distanceToCapsule': -0.7064242777388614, 'scored': 19.40290051060966, 'enemyRadar': -99.71284329473492, 'stop': -66.43243035410164, 'foodLeft': -2.8920070226206036}
+
   def getQValue(self, gameState, action):
     features = self.getFeatures(gameState, action)
-    weights = self.getWeights()
+    weights = self.weights
 
     return features*weights
 
@@ -115,27 +120,41 @@ class ApproximateQAgent(CaptureAgent):
     features = util.Counter()
     successor = self.getSuccessor(gameState, action)
 
+    foodListLast = self.getFood(gameState).asList()
     foodList = self.getFood(successor).asList()
     myPos = successor.getAgentState(self.index).getPosition()
     if len(foodList) > 0:
       minDistance = min([self.getMazeDistance(myPos, food) for food in foodList])
       features['distanceToFood'] = minDistance
+    if len(foodListLast) - len(foodList) == 1:
+      features['distanceToFood'] = 0
+
+    features['foodLeft'] = len(foodList)
 
     enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
-    ghosts = [a for a in enemies if not a.isPacman and a.getPosition() != None]
+    ghosts = [a for a in enemies if (not a.isPacman) and a.getPosition() != None]
     if len(ghosts) > 0:
       dists = [self.getMazeDistance(myPos, ghost.getPosition()) for ghost in ghosts]
       features['distanceToEnemy'] = min(dists)
+      features['enemyRadar'] = 1 if min(dists) <= 2 else 0
+
 
     capsules = self.getCapsules(successor)
     if len(capsules) > 0:
       dists = [self.getMazeDistance(myPos, capsule) for capsule in capsules]
       features['distanceToCapsule'] = min(dists)
+      currentCapsule = self.getCapsules(gameState)
+      if len(currentCapsule) - len(capsules) == 1:
+        features['distanceToCapsule'] = 0
 
-    features['eatenFood'] = len(foodList)
+
+    features['distanceToFood'] = features['distanceToFood']*(1-features['enemyRadar'])
+    features['distanceToCapsule'] = features['distanceToCapsule']*(1-features['enemyRadar'])
     features['scored'] = self.getScore(successor)
+    features['stop'] = 1 if action == Directions.STOP else 0
 
-    features.normalize()
+    #features.normalize()
+    #print(action, features)
     return features
 
   # Compute Action from Qvalues
@@ -143,8 +162,9 @@ class ApproximateQAgent(CaptureAgent):
     values = util.Counter()
     actions = gameState.getLegalActions(self.index)
     for action in actions:
-      self.update(gameState, action)
       values[action] = self.getQValue(gameState, action)
+
+    #print(values)
     return values.argMax()
 
   # Compute Value and Action from Qvalues
@@ -156,20 +176,29 @@ class ApproximateQAgent(CaptureAgent):
 
     return values[max(values)]
 
-    return self.computeValueFromQValues(state)
-
   def update(self, gameState, action):
 
     features = self.getFeatures(gameState, action)
     successor = self.getSuccessor(gameState, action)
 
-    reward = self.getScore(successor) - self.getScore(gameState)
+    reward = (self.getScore(successor) - self.getScore(gameState))
     difference = (reward + self.gamma*self.getValue(gameState)) - self.getQValue(gameState, action)
     for feature in features:
       self.weights[feature] += self.alpha*difference*features[feature]
     with open('featureWeights.txt', "w") as file:
       file.write(str(self.weights))
+      file.close()
+    with open("featureWeightsH.txt", "a") as file:
+      file.write(str(self.weights))
+      file.close()
 
+  def getSuccessor(self, gameState, action):
+    successor = gameState.generateSuccessor(self.index, action)
+    pos = successor.getAgentState(self.index).getPosition()
+    if pos != nearestPoint(pos):
+      return successor.generateSuccessor(self.index, action)
+    else:
+      return successor
 
   def getScore(self, gameState):
     """
@@ -181,16 +210,6 @@ class ApproximateQAgent(CaptureAgent):
       return gameState.getScore()
     else:
       return gameState.getScore() * -1
-
-  def getSuccessor(self, gameState, action):
-    successor = gameState.generateSuccessor(self.index, action)
-    pos = successor.getAgentState(self.index).getPosition()
-    if pos != nearestPoint(pos):
-      return successor.generateSuccessor(self.index, action)
-    else:
-      return successor
-
-
 #---------------------------------------------------------
 class ReflexCaptureAgent(CaptureAgent):
   """
@@ -324,3 +343,5 @@ class DefensiveReflexAgent(ReflexCaptureAgent):
 
   def getWeights(self, gameState, action):
     return {'numInvaders': -1000, 'onDefense': 100, 'invaderDistance': -10, 'stop': -100, 'reverse': -2}
+
+#python capture.py -r baselineTeam -b myTeam_Q -l RANDOM --numGames 100 --quiet --delay-step 0
