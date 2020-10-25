@@ -66,9 +66,12 @@ class AttackAgent(CaptureAgent):
         start = time.time()
 
         pos = gameState.getAgentPosition(self.index)
-        print("nearest border", self.getDistanceNearestPointArea(gameState, pos))
+        #print("nearest border", self.getDistanceNearestPointArea(gameState, pos))
+        print(self.target)
+        print(self.top)
+        #self.debugDraw(self.boundaries, [0,0,1])
+
         #count eaten food
-        #why does the previous observation get used instead of the current one?
         previous = self.getPreviousObservation()
         if previous is not None:
             if previous.hasFood(pos[0], pos[1]):
@@ -82,6 +85,7 @@ class AttackAgent(CaptureAgent):
 
         ghost = self.getOpponentsDistances(gameState, pos)
         border = self.getDistanceNearestPointArea(gameState, pos)
+
 
         #resets the target if the patrol to a new location has been completed
         if self.target is not None:
@@ -110,7 +114,7 @@ class AttackAgent(CaptureAgent):
                     self.debugClear()
                     return path
 
-        if ghost < 7:
+        if ghost < 5:
             if (self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
                 #selects the target from the top or bottom
                 self.target = self.sideWithMostFood(gameState)
@@ -134,7 +138,7 @@ class AttackAgent(CaptureAgent):
             #path = self.aStarSearch(gameState, 'getFood')
 
         #print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
-        #self.debugClear()
+        self.debugClear()
         return path
 
     def getSuccessor(self, gameState, action):
@@ -180,9 +184,9 @@ class AttackAgent(CaptureAgent):
     #gets the bottom coordinate for the patrol. checks 8 further coordinates if wall found.
     def getBottom(self, gameState):
         if self.red:
-            bottom = (self.boundaries[0][0] - 2, 4)
+            bottom = (self.boundaries[0][0] - 1, 4)
         else:
-            bottom = (self.boundaries[0][0] + 2, 4)
+            bottom = (self.boundaries[0][0] + 1, 4)
         x, y = bottom
         if gameState.hasWall(x, y):
             for i in range(2):
@@ -348,8 +352,9 @@ class AttackAgent(CaptureAgent):
         #food_list = self.getFood(successor).asList()
         features = util.Counter()
         pos = successor.getAgentState(self.index).getPosition()
-        #self.debugDraw(pos, [1,0,0])
-        if (self.red and pos[0] > self.halfway) or (not self.red and pos[0] <= self.halfway):
+        self.debugDraw(pos, [1,0,0])
+        if (self.red and pos[0] > self.halfway) or (not self.red and pos[0] < self.halfway):
+            theirSide = 0
             theirSide = 999
         else:
             theirSide = 0
@@ -377,6 +382,9 @@ class AttackAgent(CaptureAgent):
             features['onTheirSide'] = theirSide
 
         weights = self.getWeights(goal)
+        #if goal == "alternative":
+        #    print("position", pos)
+        #    print("heuristic", features*weights)
         return features*weights
 
     def getWeights(self, goal):
