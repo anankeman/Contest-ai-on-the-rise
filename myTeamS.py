@@ -61,12 +61,7 @@ class AttackAgent(CaptureAgent):
         self.target = None
         self.top = self.getTop(gameState)
         self.bottom = self.getBottom(gameState)
-        print(self.top)
-        print(self.bottom)
-        if gameState.hasWall(self.top[0], self.top[1]):
-            print("wall top")
-        if gameState.hasWall(self.bottom[0], self.bottom[1]):
-            print("wall bottom")
+
 
 
     def chooseAction(self, gameState):
@@ -90,27 +85,32 @@ class AttackAgent(CaptureAgent):
         ghost = self.getOpponentsDistances(gameState, pos)
         border = self.getDistanceNearestPointArea(gameState, pos)
 
-        self.target = "top"
         print(pos)
         print(self.target)
+        print(self.getMazeDistance(pos, self.top))
 
         #resets the target if the patrol to a new location has been completed
         if self.target is not None:
             if self.target == "top":
-                if pos == self.top:
+                #if pos == self.top:
+                if pos[1] >= self.top[1]:
+                    print("reset target")
                     self.target = None
             else:
-                if pos == self.bottom:
+                #if pos == self.bottom:
+                if pos[1] <= self.bottom[1]:
+                    print("reset target")
                     self.target = None
 
         #if we're still on our side, and we have the target, follow it
         if (self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
             if self.target is not None:
-                print('on side, has target', self.target)
                 if self.target == "top":
+                    print("following path to top")
                     path = self.aStarSearch(gameState, "alternative")
                     return path
                 else:
+                    print("following path to bottom")
                     path = self.aStarSearch(gameState, "alternative")
                     return path
 
@@ -118,22 +118,22 @@ class AttackAgent(CaptureAgent):
             if (self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
                 #selects the target from the top or bottom
                 self.target = self.sideWithMostFood(gameState)
+                print("target set to", self.target)
                 path = self.aStarSearch(gameState, 'alternative')
             else:
                 capsule = self.getDistanceNearestCapsule(gameState, pos)
                 if capsule > border:
+                    print("going to border")
                     path = self.aStarSearch(gameState, 'getBorder')
                 else:
+                    print("going to capsule")
                     path = self.aStarSearch(gameState, 'getCapsule')
         else:
             #Greedy approach
+            print("going for food")
             nextFood = self.getDistanceNearestFood(gameState, pos, True)
-            if (nextFood > border and self.count > 0):
-                #print("go border"+str(self.red))
-                path = self.aStarSearch(gameState, 'getBorder')
-            else:
-                #print("go food"+str(self.red))
-                path = self.aStarSearch(gameState, 'getFood')
+            #print("go food"+str(self.red))
+            path = self.aStarSearch(gameState, 'getFood')
 
             #path = self.aStarSearch(gameState, 'getFood')
 
@@ -276,11 +276,9 @@ class AttackAgent(CaptureAgent):
 
     def getPatrol(self, pos):
         if self.target == "top":
-            print('distance from top', self.getMazeDistance(pos, self.top))
-            return self.getMazeDistance(pos, self.top)
+            return self.getMazeDistance(pos, self.boundaries[-1])
         else:
-            print('distance from bottom', self.getMazeDistance(pos, self.bottom))
-            return self.getMazeDistance(pos, self.bottom)
+            return self.getMazeDistance(pos, self.boundaries[1])
 
     def monteCarlo(self, gameState):
         path = True
@@ -329,7 +327,10 @@ class AttackAgent(CaptureAgent):
         #food_list = self.getFood(successor).asList()
         features = util.Counter()
         pos = successor.getAgentState(self.index).getPosition()
-
+        if (self.red and pos[0] > self.halfway) or (not self.red and pos[0] <= self.halfway):
+            theirSide = 999
+        else:
+            theirSide = 0
 
         if goal == "getCapsule":
             features['minDistanceFood'] = 0
@@ -348,9 +349,10 @@ class AttackAgent(CaptureAgent):
             features['minDistanceOurArea'] = 0 #(self.getDistanceNearestPointArea(successor, pos)# + min_dist_food + self.initial_food - current_food)*(2-per)
         else:
             features['minDistanceFood'] = self.getPatrol(pos)
-            features['minDistanceOpponent'] = (1/ self.getOpponentsDistances(successor, pos))
+            features['minDistanceOpponent'] = 0#(1/ self.getOpponentsDistances(successor, pos))
             features['minDistanceCapsule'] = 0
             features['minDistanceOurArea'] = 0
+            features['onTheirSide'] = theirSide
 
         weights = self.getWeights(goal)
         return features*weights
@@ -375,7 +377,8 @@ class AttackAgent(CaptureAgent):
             return {'minDistanceFood': 1,
                                             'minDistanceOpponent': 30,
                                             'minDistanceCapsule': 0,
-                                            'minDistanceOurArea': 0}
+                                            'minDistanceOurArea': 0,
+                                            'onTheirSide': 1}
 
 
 #-----------------------------------------------------------------------------------
