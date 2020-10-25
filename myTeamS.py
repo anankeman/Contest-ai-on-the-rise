@@ -58,7 +58,7 @@ class AttackAgent(CaptureAgent):
         self.halfway = gameState.data.layout.width//2
         food_list = self.getFood(gameState).asList()
         self.initial_food = len(food_list)
-        self.target = "top"
+        self.target = None
         self.top = self.getTop(gameState)
         self.bottom = self.getBottom(gameState)
 
@@ -67,8 +67,6 @@ class AttackAgent(CaptureAgent):
 
         pos = gameState.getAgentPosition(self.index)
         #print("nearest border", self.getDistanceNearestPointArea(gameState, pos))
-        print(self.target)
-        print(self.top)
         #self.debugDraw(self.boundaries, [0,0,1])
 
         #count eaten food
@@ -114,7 +112,7 @@ class AttackAgent(CaptureAgent):
                     self.debugClear()
                     return path
 
-        if ghost < 5:
+        if ghost < 7:
             if (self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
                 #selects the target from the top or bottom
                 self.target = self.sideWithMostFood(gameState)

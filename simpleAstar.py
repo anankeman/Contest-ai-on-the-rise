@@ -66,8 +66,8 @@ class AttackAgent(CaptureAgent):
         start = time.time()
 
         pos = gameState.getAgentPosition(self.index)
-        print(pos)
-        print(self.boundaries)
+        #print(pos)
+        #print(self.boundaries)
         if pos in self.boundaries[-3:]:
             self.patrol = 'down'
         if pos in self.boundaries[:3]:
@@ -90,27 +90,27 @@ class AttackAgent(CaptureAgent):
 
         if False:#ghost < 7:
             if False:#(self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
-                print("alternative"+str(self.red))
+                #print("alternative"+str(self.red))
                 path = self.aStarSearch(gameState, 'alternative')
             else:
                 capsule = self.getDistanceNearestCapsule(gameState, pos)
                 if capsule > border:
-                    print("go border cus ghost"+str(self.red))
+                    #print("go border cus ghost"+str(self.red))
                     path = self.aStarSearch(gameState, 'getBorder')
                 else:
-                    print("go capsule"+str(self.red))
+                    #print("go capsule"+str(self.red))
                     path = self.aStarSearch(gameState, 'getCapsule')
         else:
             #Greedy approach
             nextFood = self.getDistanceNearestFood(gameState, pos, True)
             if (nextFood > border and self.count > 0):
-                print("go border"+str(self.red))
+                #print("go border"+str(self.red))
                 path = self.aStarSearch(gameState, 'getBorder')
             else:
-                print("go food"+str(self.red))
+                #print("go food"+str(self.red))
                 path = self.aStarSearch(gameState, 'getFood')
 
-        print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
+        #print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
 
         return path
 
@@ -239,7 +239,7 @@ class AttackAgent(CaptureAgent):
                 pos = currentState.getAgentState(self.index).getPosition()
                 if self.getGoal(goal,initialState, currentState, pos):
                     if len(answer) > 1:
-                        print([i[1] for i in answer[1:]], "answer")
+                        #print([i[1] for i in answer[1:]], "answer")
                         return answer[1][1]
                     else:
                         return Directions.STOP
@@ -251,7 +251,7 @@ class AttackAgent(CaptureAgent):
                     nextState = self.getSuccessor(currentState, action)
                     nextCost = currentCost + 1
                     heu = self.heuristic_Astar(nextState, goal)
-                    print('heu: '+str(heu))
+                    #print('heu: '+str(heu))
                     currentPath = list(answer)
                     currentPath.append((pos, action))
                     priorityQ.push((nextState, currentPath, currentCost), heu+nextCost)
