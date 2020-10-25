@@ -83,10 +83,9 @@ class AttackAgent(CaptureAgent):
         border = self.getDistanceNearestPointArea(gameState, pos)
 
         if ghost < 7:
-            if (self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
-                #print("alternative"+str(self.red))
-                path = self.aStarSearch(gameState, 'alternative')
-            else:
+            #if (self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
+            #    print("alternative"+str(self.red))
+            #    path = self.aStarSearch(gameState, 'alternative')
                 capsule = self.getDistanceNearestCapsule(gameState, pos)
                 if capsule > border:
                     #print("go border cus ghost"+str(self.red))
@@ -97,12 +96,12 @@ class AttackAgent(CaptureAgent):
         else:
             #Greedy approach
             nextFood = self.getDistanceNearestFood(gameState, pos, True)
-            if nextFood > border and self.count > 0:
-                #print("go border"+str(self.red))
-                path = self.aStarSearch(gameState, 'getBorder')
-            else:
-                #print("go food"+str(self.red))
-                path = self.aStarSearch(gameState, 'getFood')
+            #if nextFood > border and self.count > 0:
+            #    print("go border"+str(self.red))
+            #    path = self.aStarSearch(gameState, 'getBorder')
+            #else:
+            #    print("go food"+str(self.red))
+            path = self.aStarSearch(gameState, 'getFood')
 
         #print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
 
