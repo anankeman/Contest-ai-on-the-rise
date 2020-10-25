@@ -459,10 +459,7 @@ class DefendAgent(AttackAgent):
                 path = self.aStarSearch(gameState, 'getInvaders_scared')
 
         elif len(food_list_previous) - len(food_list_current) > 0:
-            food_eaten = list(set(food_list_previous) - set(food_list_current))[0]
-            print("food eaten", food_eaten)
-            closest_food = self.next_food(gameState, food_eaten)
-            self.target = closest_food
+            self.target = list(set(food_list_previous) - set(food_list_current))[0]
             path = self.aStarSearch(gameState, 'getFood')
 
         elif self.target is not None:
