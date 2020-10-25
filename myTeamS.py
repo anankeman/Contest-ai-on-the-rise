@@ -62,12 +62,11 @@ class AttackAgent(CaptureAgent):
         self.top = self.getTop(gameState)
         self.bottom = self.getBottom(gameState)
 
-
     def chooseAction(self, gameState):
         start = time.time()
 
         pos = gameState.getAgentPosition(self.index)
-
+        print("nearest border", self.getDistanceNearestPointArea(gameState, pos))
         #count eaten food
         #why does the previous observation get used instead of the current one?
         previous = self.getPreviousObservation()
@@ -103,13 +102,15 @@ class AttackAgent(CaptureAgent):
                 if self.target == "top":
                     print("following path to top")
                     path = self.aStarSearch(gameState, "alternative")
+                    self.debugClear()
                     return path
                 else:
                     print("following path to bottom")
                     path = self.aStarSearch(gameState, "alternative")
+                    self.debugClear()
                     return path
 
-        if ghost < 5:
+        if ghost < 7:
             if (self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
                 #selects the target from the top or bottom
                 self.target = self.sideWithMostFood(gameState)
@@ -248,13 +249,22 @@ class AttackAgent(CaptureAgent):
         if len(capsules_list) > 0:
             return min([self.getMazeDistance(pos, x) for x in capsules_list])
         else:
-            return 0
+            return 999
 
     #Distance to nearest point of our area
 
     def getDistanceNearestPointArea(self, gameState, pos):
         return min([self.getMazeDistance(pos, i) for i in self.boundaries])
 
+    def getDistanceNearestPointArea_test(self, gameState, pos):
+        border = None
+        border_dist = 999
+        for i in self.boundaries:
+            if self.getMazeDistance(pos, i) < border_dist:
+                border = i
+                border_dist = self.getMazeDistance(pos, i)
+        print(border)
+        return border_dist
 
     def getGoal(self, goal, initialState, currentState, pos):
         if goal == "getCapsule":
@@ -327,6 +337,7 @@ class AttackAgent(CaptureAgent):
         #food_list = self.getFood(successor).asList()
         features = util.Counter()
         pos = successor.getAgentState(self.index).getPosition()
+        self.debugDraw(pos, [1,0,0])
         if (self.red and pos[0] > self.halfway) or (not self.red and pos[0] <= self.halfway):
             theirSide = 999
         else:
@@ -349,7 +360,7 @@ class AttackAgent(CaptureAgent):
             features['minDistanceOurArea'] = 0 #(self.getDistanceNearestPointArea(successor, pos)# + min_dist_food + self.initial_food - current_food)*(2-per)
         else:
             features['minDistanceFood'] = self.getPatrol(pos)
-            features['minDistanceOpponent'] = 0#(1/ self.getOpponentsDistances(successor, pos))
+            features['minDistanceOpponent'] = (1/ self.getOpponentsDistances(successor, pos))
             features['minDistanceCapsule'] = 0
             features['minDistanceOurArea'] = 0
             features['onTheirSide'] = theirSide
@@ -370,7 +381,7 @@ class AttackAgent(CaptureAgent):
                                             'minDistanceOurArea': 1}
         elif goal == "getFood":
             return {'minDistanceFood': 1,
-                                            'minDistanceOpponent': 1,
+                                            'minDistanceOpponent': 30,
                                             'minDistanceCapsule': 0,
                                             'minDistanceOurArea': 0}
         else:
@@ -558,9 +569,9 @@ class DefendAgent(AttackAgent):
             features['minDistanceOurArea'] = border_dist
         else: #goal == "goCenter"
             features['minDistanceFood'] = self.getMazeDistance(pos, self.target)
-            features['minDistanceOpponent'] = 99
-            features['minDistanceCapsule'] = 99
-            features['minDistanceOurArea'] = 99
+            features['minDistanceOpponent'] = 0
+            features['minDistanceCapsule'] = 0
+            features['minDistanceOurArea'] = 0
         weights = self.getWeights(goal)
         return features*weights
 
