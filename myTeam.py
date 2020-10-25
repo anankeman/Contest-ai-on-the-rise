@@ -350,7 +350,7 @@ class AttackAgent(CaptureAgent):
         #food_list = self.getFood(successor).asList()
         features = util.Counter()
         pos = successor.getAgentState(self.index).getPosition()
-        self.debugDraw(pos, [1,0,0])
+        #self.debugDraw(pos, [1,0,0])
         if (self.red and pos[0] > self.halfway) or (not self.red and pos[0] < self.halfway):
             theirSide = 0
             theirSide = 999
@@ -390,8 +390,8 @@ class AttackAgent(CaptureAgent):
                                             'minDistanceCapsule': 1,
                                             'minDistanceOurArea': 0}
         elif goal == "getBorder":
-            return {'minDistanceFood': 1,
-                                            'minDistanceOpponent': 0,
+            return {'minDistanceFood': 0,
+                                            'minDistanceOpponent': 1,
                                             'minDistanceCapsule': 0,
                                             'minDistanceOurArea': 1}
         elif goal == "getFood":
