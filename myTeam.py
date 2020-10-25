@@ -66,7 +66,7 @@ class AttackAgent(CaptureAgent):
         start = time.time()
 
         pos = gameState.getAgentPosition(self.index)
-        
+
         #count eaten food
         previous = self.getPreviousObservation()
         if previous is not None:
@@ -83,26 +83,25 @@ class AttackAgent(CaptureAgent):
         border = self.getDistanceNearestPointArea(gameState, pos)
 
         if ghost < 7:
-            if (self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
-                print("alternative"+str(self.red))
-                path = self.aStarSearch(gameState, 'alternative')
-            else:
+            #if (self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
+            #    print("alternative"+str(self.red))
+            #    path = self.aStarSearch(gameState, 'alternative')
                 capsule = self.getDistanceNearestCapsule(gameState, pos)
                 if capsule > border:
-                    print("go border cus ghost"+str(self.red))
+                    #print("go border cus ghost"+str(self.red))
                     path = self.aStarSearch(gameState, 'getBorder')
                 else:
-                    print("go capsule"+str(self.red))
+                    #print("go capsule"+str(self.red))
                     path = self.aStarSearch(gameState, 'getCapsule')
         else:
             #Greedy approach
             nextFood = self.getDistanceNearestFood(gameState, pos, True)
-            if nextFood > border and self.count > 0:
-                print("go border"+str(self.red))
-                path = self.aStarSearch(gameState, 'getBorder')
-            else:
-                print("go food"+str(self.red))
-                path = self.aStarSearch(gameState, 'getFood')
+            #if nextFood > border and self.count > 0:
+            #    print("go border"+str(self.red))
+            #    path = self.aStarSearch(gameState, 'getBorder')
+            #else:
+            #    print("go food"+str(self.red))
+            path = self.aStarSearch(gameState, 'getFood')
 
         #print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
 
@@ -151,7 +150,7 @@ class AttackAgent(CaptureAgent):
                 return 9999
 
             return min([self.getMazeDistance(pos, i) for i in food])
-        
+
         return self.closestPoint(pos, food, 0)
         #return min([self.getMazeDistance(pos, i) for i in food])
 
@@ -193,7 +192,7 @@ class AttackAgent(CaptureAgent):
                 return True
         else:
             return False
-        
+
     def getPatrol(self, pos):
         if self.patrol == 'up':
             if pos in self.boundaries[-3]:
@@ -216,29 +215,29 @@ class AttackAgent(CaptureAgent):
     def aStarSearch(self, gameState, goal, maxSight = 60):
         """Search the node that has the lowest combined cost and heuristic first."""
         priorityQ = util.PriorityQueue()
-        mark = [] #mark visited states  
+        mark = [] #mark visited states
         case = []
         initialState = gameState
         priorityQ.push((gameState, [((0),"start")], 0), 0)
-       
+
         bestG = dict()
         while not priorityQ.isEmpty() and (maxSight > 0):
             currentState, answer, currentCost = priorityQ.pop()
             case = answer
-            
+
             if currentState not in mark or currentCost < bestG.get(currentState):
                 mark.append(currentState)
                 bestG[currentState] = currentCost
                 pos = currentState.getAgentState(self.index).getPosition()
-                if self.getGoal(goal,initialState, currentState, pos):                    
+                if self.getGoal(goal,initialState, currentState, pos):
                     if len(answer) > 1:
                         return answer[1][1]
                     else:
                         return Directions.STOP
-                   
+
                 maxSight -= 1
                 actions = currentState.getLegalActions(self.index)
-                
+
                 for action in actions:
                     nextState = self.getSuccessor(currentState, action)
                     nextCost = currentCost + 1
@@ -247,7 +246,7 @@ class AttackAgent(CaptureAgent):
                     currentPath = list(answer)
                     currentPath.append((pos, action))
                     priorityQ.push((nextState, currentPath, currentCost), heu+nextCost)
-        
+
         return case[1][1]
 
 
@@ -302,7 +301,7 @@ class AttackAgent(CaptureAgent):
                                             'minDistanceOpponent': 30,
                                             'minDistanceCapsule': 0,
                                             'minDistanceOurArea': 0}
-            
+
 
 #-----------------------------------------------------------------------------------
 
