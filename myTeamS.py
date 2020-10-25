@@ -380,9 +380,7 @@ class AttackAgent(CaptureAgent):
             features['onTheirSide'] = theirSide
 
         weights = self.getWeights(goal)
-        #if goal == "alternative":
-        #    print("position", pos)
-        #    print("heuristic", features*weights)
+        
         return features*weights
 
     def getWeights(self, goal):
