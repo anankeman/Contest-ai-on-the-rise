@@ -134,7 +134,7 @@ class AttackAgent(CaptureAgent):
             #path = self.aStarSearch(gameState, 'getFood')
 
         #print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
-        self.debugClear()
+        #self.debugClear()
         return path
 
     def getSuccessor(self, gameState, action):
@@ -348,7 +348,7 @@ class AttackAgent(CaptureAgent):
         #food_list = self.getFood(successor).asList()
         features = util.Counter()
         pos = successor.getAgentState(self.index).getPosition()
-        self.debugDraw(pos, [1,0,0])
+        #self.debugDraw(pos, [1,0,0])
         if (self.red and pos[0] > self.halfway) or (not self.red and pos[0] <= self.halfway):
             theirSide = 999
         else:
