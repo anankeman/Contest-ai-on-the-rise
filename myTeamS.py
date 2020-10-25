@@ -67,6 +67,8 @@ class AttackAgent(CaptureAgent):
 
         pos = gameState.getAgentPosition(self.index)
         print("nearest border", self.getDistanceNearestPointArea(gameState, pos))
+        print(self.getCapsules(gameState))
+        print(self.getDistanceNearestCapsule(gameState, pos))
         #count eaten food
         #why does the previous observation get used instead of the current one?
         previous = self.getPreviousObservation()
@@ -249,7 +251,18 @@ class AttackAgent(CaptureAgent):
         if len(capsules_list) > 0:
             return min([self.getMazeDistance(pos, x) for x in capsules_list])
         else:
-            return 999
+            return 0
+
+    def getCapsule(self, gameState, pos):
+        capsule_list = self.getCapsules(gameState)
+        if len(capsule_list) > 0:
+            capsule = None
+            cap_dist = 999
+            for i in capsule_list:
+                if self.getMazeDistance(i, pos) < cap_dist:
+                    capsule = i
+                    cap_dist = self.getMazeDistance(i, pos)
+        return capsule
 
     #Distance to nearest point of our area
 
@@ -366,6 +379,10 @@ class AttackAgent(CaptureAgent):
             features['onTheirSide'] = theirSide
 
         weights = self.getWeights(goal)
+        if goal == "getCapsule":
+            print("")
+            print("currentpos", pos)
+            print(features*weights)
         return features*weights
 
     def getWeights(self, goal):
