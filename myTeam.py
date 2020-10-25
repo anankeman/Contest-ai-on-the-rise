@@ -61,6 +61,7 @@ class AttackAgent(CaptureAgent):
         self.target = None
         self.top = self.getTop(gameState)
         self.bottom = self.getBottom(gameState)
+        self.capsule = None
 
     def chooseAction(self, gameState):
         start = time.time()
@@ -83,7 +84,7 @@ class AttackAgent(CaptureAgent):
 
         ghost = self.getOpponentsDistances(gameState, pos)
         border = self.getDistanceNearestPointArea(gameState, pos)
-
+        self.capsule = None
 
         #resets the target if the patrol to a new location has been completed
         if self.target is not None:
@@ -125,6 +126,7 @@ class AttackAgent(CaptureAgent):
                     path = self.aStarSearch(gameState, 'getBorder')
                 else:
                     print("going to capsule")
+                    self.capsule = self.getNearestCapsule(gameState, pos)
                     path = self.aStarSearch(gameState, 'getCapsule')
         else:
             #Greedy approach
@@ -251,9 +253,9 @@ class AttackAgent(CaptureAgent):
         if len(capsules_list) > 0:
             return min([self.getMazeDistance(pos, x) for x in capsules_list])
         else:
-            return 0
+            return 999
 
-    def getCapsule(self, gameState, pos):
+    def getNearestCapsule(self, gameState, pos):
         capsule_list = self.getCapsules(gameState)
         if len(capsule_list) > 0:
             capsule = None
@@ -281,8 +283,7 @@ class AttackAgent(CaptureAgent):
 
     def getGoal(self, goal, initialState, currentState, pos):
         if goal == "getCapsule":
-            if len(self.getCapsules(initialState))-len(self.getCapsules(currentState)) == 1:
-                return True
+            return pos == self.capsule
         elif goal == "getFood":
             if len(self.getFood(initialState).asList())-len(self.getFood(currentState).asList()) == 1:
                 return True
@@ -360,7 +361,7 @@ class AttackAgent(CaptureAgent):
         if goal == "getCapsule":
             features['minDistanceFood'] = 0
             features['minDistanceOpponent'] = 1/self.getOpponentsDistances(successor, pos)
-            features['minDistanceCapsule'] = self.getDistanceNearestCapsule(successor, pos)
+            features['minDistanceCapsule'] = self.getMazeDistance(self.capsule, pos)
             features['minDistanceOurArea'] = 0
         elif goal == "getBorder":
             features['minDistanceFood'] = 0#self.getDistanceNearestFood(successor, pos)
