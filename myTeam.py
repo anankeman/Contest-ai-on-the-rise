@@ -113,7 +113,7 @@ class AttackAgent(CaptureAgent):
                     self.debugClear()
                     return path
 
-        if ghost < 7:
+        if ghost < 6:
             if (self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
                 #selects the target from the top or bottom
                 self.target = self.sideWithMostFood(gameState)
