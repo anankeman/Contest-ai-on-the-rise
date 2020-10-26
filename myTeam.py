@@ -116,7 +116,7 @@ class AttackAgent(CaptureAgent):
                 else:
                     path = self.aStarSearch(gameState, 'getBorder')
         else:
-            if ghost < 6:
+            if ghost < 5:
                 border = self.getDistanceNearestPointArea(gameState, pos)
                 capsule = self.getDistanceNearestCapsule(gameState, pos)
                 if capsule > border:
