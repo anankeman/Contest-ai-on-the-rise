@@ -32,11 +32,29 @@ Then, the best Defence approach selected from the above is set as base (Defence 
 
 As it can be seen, the best Attack approach is A star (heuristic), with a substantial improvement in winning ratio against the other three methodologies, as well as a higher average score. Additionally, the three implemented approaches beat the Baseline Attack, and the MiniMax and Approximate Q-Learning with similar performance, only with a slightly difference in favour of the MiniMax approach.
 
-### Overall Performance
+### Performance
+#### Initial Performance
+
+##### Competition 11th October
+![](images/Comp11-1.png)
+
+The initial A* strategy implemented had a lot of bugs, as can be seen by the 25 errors. However, it performed reasonably well compared to the other teams, beating medium and almost reaching the level of top. 
+
+##### Competition 12th October
+![](images/Comp12-2.png)
+
+However, after bug fixes, the performance was not significantly improved, which indicated that most of the buggy games would have resulted in a loss. 
+
+##### Competition 25th October
+![](images/Comp25-1.png)
+
+Various iterative improvements were made, such as implementing patrol for the defensive agent, changing heuristics, adding things to the decision tree, and simplifying the decision tree. However, overall, performance did not change significantly, as every iterative improvement resulted in a new problem. 
+
+#### Overall Performance
 
 ![](images/comp-perfomance.png)
 
-As can be seen, from the initial approach through to our final approach, our performance actually decreased. This corresponds to trying out different methods, however even when trying to improve A*, we did not win against Staff_TOP, which was the goal of improving the original strategy. 
+As can be seen, from the initial approach through to our final approach, our performance actually decreased. This corresponds to trying out different methods, however even when trying to improve A*, we did not win against Staff_TOP, which was the goal of improving the original strategy. The strategy implemented relied heavily on decision boundaries of the decision tree implemented, which were often problematic to fine tune. 
 
 ### Challenges  
 
@@ -50,5 +68,8 @@ The different approaches tried all have their relative strengths and weaknesses.
 ## Conclusions and Learning
 
 The competition was difficult! But having a setting to practice different AI techniques was very informative. One of the main take-aways was that every strategy has its pros and cons. There are some that will perform well at some tasks, but are less good at others, and there is always a trade off between complexity and optimality. 
-The second and third strategies employed proved not to be as effective as A*, however this could be due to implementation, or simply the problem being solved. It is likely that with more variety a better solution could have been found.
+
+Reflecting on the strategy employed in this competition, it is likely from our results that using a decision tree was not the right decision, and it doesn't provide a general solution to the problem, as it is not possible to forsee every outcome, and programming the tree generally leads to an unintelligent agent. 
+
+The second and third strategies employed proved not to be as effective as A*, however this could be due to implementation, or simply the problem being solved. It is likely that with more variety a better solution could have been found. 
 
