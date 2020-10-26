@@ -1,10 +1,6 @@
 # AI Method 1 - A start Approach
 
 
-Your notes about this part of the project, including acknowledgement, comments, strengths and limitations, etc.
-
-If you use Greedy Best First Search (GBFS) or Monte Carlo Tree Search (MCTS), you do not need to explain the algorithm GBFS/MCTS, tell us how you used it and how you applied it in your team.
-
 # Table of Contents
 - [Governing Strategy Tree](#governing-strategy-tree)
   * [Motivation](#motivation)
@@ -58,7 +54,7 @@ The defender also had to try and avoid being eaten when scared, and the strategy
 The various approaches for the offensive agent were then assessed for the best starting point: 
 1) In the first approach, taking a simple abstraction of the game state, and updating this abstraction was effective in reducing computational complexity and allowed a path to be found to the nearest food quickly. However it proved to be ineffective as it didn’t have enough detail in the representation of the game state and taking into account ghost movement more dynamically was necessary. Additionally, it made a bulky program where every goal had to be framed as a new problem. 
 2) The second approach was abandoned as although at the start the plan was optimal, the further away from the next step the agent moved or was chased, the further from optimal the plan became. There was also a large overhead in calculating the optimal plan at the start, and it was not certain that 15 seconds was sufficient with all mazes in addition to other calculations. 
-3) The third approach worked well, but had erratic behaviour in some situations because it relied only on the heuristic, But more importantly, as in most scenarios the algorithm was truncated when reaching the maximum iteration, returning a suboptimal decision.  which was inappropriate for goals like running away.  
+3) The third approach worked well, but had erratic behaviour in some situations because it relied only on the heuristic, But more importantly, as in most scenarios the algorithm was truncated when reaching the maximum number of recursions, returning a suboptimal decision, taking erratical behavior which was critical in cirtuntances such as running away.  
 4) The fourth strategy was ultimately chosen optimization for the offensive agent, as the behaviour was more clearly mapped out by a heuristic function which balanced the various goals, and this gave the agent a higher degree of flexibility, rather than purely relying on the heuristic, which gave a fuzzy decision boundary and sometimes resulted in erratic behaviour.
 [Back to top](#table-of-contents)
 
