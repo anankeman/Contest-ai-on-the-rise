@@ -102,37 +102,51 @@ class AttackAgent(CaptureAgent):
         #if we're still on our side, and we have the target, follow it
         if (self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
             if self.target is not None:
-                #print("following path to top")
-                path = self.aStarSearch(gameState, "alternative")
-                self.debugClear()
-                return path
-
-        if (self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
-            if ghost < 3:
-                self.target = self.sideWithMostFood(gameState)
-                path = self.aStarSearch(gameState, 'alternative')
-            else:
-                if len(self.getFood(gameState).asList()):
-                    path = self.aStarSearch(gameState, 'getFood')
+                print("patrolc")
+                if self.target == "top":
+                    #print("following path to top")
+                    path = self.aStarSearch(gameState, "alternative")
+                    self.debugClear()
+                    return path
                 else:
-                    path = self.aStarSearch(gameState, 'getBorder')
-        else:
-            if ghost < 6:
+                    #print("following path to bottom")
+                    path = self.aStarSearch(gameState, "alternative")
+                    self.debugClear()
+                    return path
+
+        if ghost < 6:
+            if (self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
+                #selects the target from the top or bottom
+                self.target = self.sideWithMostFood(gameState)
+                #print("target set to", self.target)
+                path = self.aStarSearch(gameState, 'alternative')
+                print("patrolc")
+            else:
                 border = self.getDistanceNearestPointArea(gameState, pos)
                 capsule = self.getDistanceNearestCapsule(gameState, pos)
                 if capsule > border:
                     #print("going to border")
                     path = self.aStarSearch(gameState, 'getBorder')
+                    print("borderc")
                 else:
                     #print("going to capsule")
                     self.capsule = self.getNearestCapsule(gameState, pos)
                     path = self.aStarSearch(gameState, 'getCapsule')
+                    print("capsulec")
+        else:
+            #Greedy approach
+            #print("going for food")
+            #nextFood = self.getDistanceNearestFood(gameState, pos, True)
+            #print("go food"+str(self.red))
+
+
+            if len(self.getFood(gameState).asList()):
+                path = self.aStarSearch(gameState, 'getFood')
+                print("foodc")
             else:
-                if len(self.getFood(gameState).asList()):
-                    path = self.aStarSearch(gameState, 'getFood')
-                else:
-                    path = self.aStarSearch(gameState, 'getBorder')
-                
+                path = self.aStarSearch(gameState, 'getBorder')
+                print("borderc")
+
         #print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
         #self.debugClear()
         return path
