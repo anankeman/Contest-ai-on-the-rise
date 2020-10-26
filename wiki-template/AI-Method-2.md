@@ -20,6 +20,7 @@ We introduced a strategy using the minimax algorithm. This is a strategy that us
 
 ### Design 
 
+#### Basic minimax
 The basic algorithm consists of the following:
 
 1) Recursively evaluates decisions for players by using decisions for the maximising player and the minimizing player if they are present. 
@@ -30,7 +31,7 @@ Due to this algorithm using recursion, the main issue is high complexity, as it 
 
 One solution to this is to use alpha-beta pruning. Alpha-beta pruning is a technique that involves removing elements of the decision tree which are clearly not going to influence the final decision. The intuition behind this is that if the evaluation for a generated state is cerain to be lower than one already generated, it is not explored further as it will not add any information to the problem. Alpha-beta pruning was therefore implemented to reduce such complexity and avoid timeouts.
 
-Implementation: 
+#### Minimax with alpha-beta pruning
 
 Alpha-beta pruning introduces two variables to keep track of current maximum and minimum of a branch. If an agent is minimizing it will not pick branches that are greater than the current value, therefore there is no need to keep exploring that branch. The same thing will occur with the maximizing agent when it encounters a branch that has less than the current value.
 
