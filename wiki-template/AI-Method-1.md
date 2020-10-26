@@ -55,9 +55,11 @@ The defender also had to try and avoid being eaten when scared, and the strategy
 
 #### Optimization and Troubleshooting
 
-The various approaches for the offensive agent were then assessed for the best starting point: In the first approach, taking a simple abstraction of the game state, and updating this abstraction was effective in reducing computational complexity and allowed a path to be found to the nearest food quickly. However it proved to be ineffective as it didn’t have enough detail in the representation of the game state and taking into account ghost movement more dynamically was necessary. Additionally, it made a bulky program where every goal had to be framed as a new problem. 
-The second approach was abandoned as although at the start the plan was optimal, the further away from the next step the agent moved or was chased, the further from optimal the plan became. There was also a large overhead in calculating the optimal plan at the start, and it was not certain that 15 seconds was sufficient with all mazes in addition to other calculations. 
-The third and fourth approach worked well. The fourth strategy was ultimately chosen optimization for the offensive agent, as the behaviour was more clearly mapped out by a heuristic function which balanced the various goals, and this gave the agent a higher degree of flexibility, rather than purely relying on the heuristic, which gave a fuzzy decision boundary and sometimes resulted in erratic behaviour.
+The various approaches for the offensive agent were then assessed for the best starting point: 
+1) In the first approach, taking a simple abstraction of the game state, and updating this abstraction was effective in reducing computational complexity and allowed a path to be found to the nearest food quickly. However it proved to be ineffective as it didn’t have enough detail in the representation of the game state and taking into account ghost movement more dynamically was necessary. Additionally, it made a bulky program where every goal had to be framed as a new problem. 
+2) The second approach was abandoned as although at the start the plan was optimal, the further away from the next step the agent moved or was chased, the further from optimal the plan became. There was also a large overhead in calculating the optimal plan at the start, and it was not certain that 15 seconds was sufficient with all mazes in addition to other calculations. 
+3) The third approach worked well, but had erratic behaviour in some situations because it relied only on the heuristic, which was inappropriate for goals like running away. 
+4) The fourth strategy was ultimately chosen optimization for the offensive agent, as the behaviour was more clearly mapped out by a heuristic function which balanced the various goals, and this gave the agent a higher degree of flexibility, rather than purely relying on the heuristic, which gave a fuzzy decision boundary and sometimes resulted in erratic behaviour.
 [Back to top](#table-of-contents)
 
 ### Application
@@ -88,7 +90,7 @@ The distance from ghosts was taken into account in all heuristics to ensure the 
 This approach allowed the agent to set up the overall problem as several sub problems based on the goal. 
 
 ##### Issues:
-The use of several goals with different heuristic values made the decision boundary between different problems difficult to predict, and sometimes resulted in loops or bad behaviour in certain situations. Behaviour in the average situation was as expected, and given no defence the agent worked optimally. However, the agent’s performance was significantly impacted by the presence of a defender, depending on where the agent was in relation to the border. There were also many bugs that involved making sure that the goals were followed as predicted. As the agent was guided by the heuristic, this often lead to unexpected behaviour when the goal was inappropriately framed. For instance, if the goal was to eat a capsule, and the distance from the capsule was used as the heuristic, the agent would avoid eating the capsule as distance would increase immediately after, leading to a worse heuristic value. 
+The main issues facing the approach chosen were that the more complex decision tree used to try and capture optimal behaviour, the more it misbehaved in unexpected situations. It was difficult to encode every decision in the tree, and this caused problems. 
 [Back to top](#table-of-contents)
 
 ##### Trade-offs  
