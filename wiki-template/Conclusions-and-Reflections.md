@@ -32,6 +32,8 @@ Then, the best Defence approach selected from the above is set as base (Defence 
 
 As it can be seen, the best Attack approach is A star (heuristic), with a substantial improvement in winning ratio against the other three methodologies, as well as a higher average score. Additionally, the three implemented approaches beat the Baseline Attack, and the MiniMax and Approximate Q-Learning with similar performance, only with a slightly difference in favour of the MiniMax approach.
 
+![](images/comp-performance.png)
+
 ## Challenges  
 
 Some general challenges to the project were:
