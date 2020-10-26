@@ -10,10 +10,11 @@
 
 **Team members:**
 
-* Student 1's Student number - James Rosling - Student email - Student Github id
+* Student 1's 1164393 - James Rosling - jrosling@student.unimelb.edu.au - jamesrosling
 * Student 2's 1015501 - Felipe Ramos - framosmorale@student.unimelb.edu.au - anankeman
-* Student 3's Student number - Carlos Davalos - Student email - Student Github id
+* Student 3's 1020724 - Carlos Davalos - cdavaloscast@student.unimelb.edu.au - cdavalos970
 
 Replace the lines above with the correct details of members. Delete or add lines as needed.
 
 Student numbers should just be the **numbers**.
+
