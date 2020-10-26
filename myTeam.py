@@ -64,10 +64,12 @@ class AttackAgent(CaptureAgent):
         self.capsule = None
 
     def chooseAction(self, gameState):
-        start = time.time()
 
+
+        #start = time.time()
         pos = gameState.getAgentPosition(self.index)
-        #print("nearest border", self.getDistanceNearestPointArea(gameState, pos))
+        self.capsule = None
+        ghost = self.getOpponentsDistances(gameState, pos)
         #self.debugDraw(self.boundaries, [0,0,1])
 
         #count eaten food
@@ -82,9 +84,11 @@ class AttackAgent(CaptureAgent):
 
         #issues: ghost information is shared between teammates
 
-        ghost = self.getOpponentsDistances(gameState, pos)
 
-        self.capsule = None
+
+        if gameState.data.timeleft < 75:
+            path = self.aStarSearch(gameState, 'getBorder')
+            return path
 
         #resets the target if the patrol to a new location has been completed
         if self.target is not None:
@@ -360,7 +364,7 @@ class AttackAgent(CaptureAgent):
             features['minDistanceOurArea'] = 0#self.getDistanceNearestPointArea(successor, pos)# + min_dist_food + self.initial_food - current_food)*(2-per)
         elif goal == 'alternative':
             features['minDistanceFood'] = self.getPatrol(pos)
-            features['minDistanceOpponent'] = (1/ self.getOpponentsDistances(successor, pos))
+            features['minDistanceOpponent'] = 0#(1/ self.getOpponentsDistances(successor, pos))
             features['minDistanceCapsule'] = 0
             features['minDistanceOurArea'] = 0
             features['onTheirSide'] = theirSide
