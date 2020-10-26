@@ -25,14 +25,13 @@ The basic setup of the capture the flag state space can be listed as follows:
 
 As there is a cap on computational time, an algorithm must be able to run in the time given and so has to have a limit on time complexity. As can be seen from the above representation, the total number of possible states in the game is very large, leading to several problems in solving the problem which depend on the approach. Taking this state model into account, an approximate Q-learning strategy was employed, as it was possible to learn the weights for parameters used in calculating the Q function offline, and then use these in an online setting by selecting the action that maximises the Q-value of the successor state. 
 
-Approximate Q-Learning
+#### Approximate Q-Learning
 This method uses the same approach as Q-learning, which uses rewards to guide the agent in the right direction and, the exploration and exploitation approach to encourage the agent to search for novel states and rewards. The difference between Q-learning and approximate Q-learning is that approximate Q-learning assumes the existence of a feature function ![f1] over state and action pairs, where the feature function is represented by a vector of feature values ![f2], reducing the description of a state to a number of features determined with domain knowledge. 
 
 [Back to top](#table-of-contents)
 
 ### Application  
-
-For the specific case of Capture the Flag, the main features selected to represent a state are:
+The approximate Q-learning algorithm learned weights for a selection of features, and used these to approximate the Q-value of the different states. The features chosen for implementation were:
 * distanceToFood: maze distance to the nearest pellet of food
 * distanceToEnemy
 * distanceToCapsule: maze distance to the nearest capsule. If not capsules, the state doesn't show any, and weight doesn't affect the linear combination
