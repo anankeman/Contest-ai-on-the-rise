@@ -23,6 +23,8 @@ import math
 # Team creation #
 #################
 
+#copy of previous version before 3pm submission on 26th
+
 def createTeam(firstIndex, secondIndex, isRed,
                              first = 'AttackAgent', second = 'DefendAgent'):
     """

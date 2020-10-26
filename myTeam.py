@@ -90,19 +90,14 @@ class AttackAgent(CaptureAgent):
         if self.target is not None:
             if self.target == "top":
                 if pos == self.top:
-                #if pos[1] >= self.top[1]:
-                    #print("reset target")
                     self.target = None
             else:
                 if pos == self.bottom:
-                #if pos[1] <= self.bottom[1]:
-                    #print("reset target")
                     self.target = None
 
         #if we're still on our side, and we have the target, follow it
         if (self.red and pos[0] < self.halfway) or (not self.red and pos[0] >= self.halfway):
             if self.target is not None:
-                #print("following path to top")
                 path = self.aStarSearch(gameState, "alternative")
                 self.debugClear()
                 return path
@@ -132,7 +127,7 @@ class AttackAgent(CaptureAgent):
                     path = self.aStarSearch(gameState, 'getFood')
                 else:
                     path = self.aStarSearch(gameState, 'getBorder')
-                
+
         #print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
         #self.debugClear()
         return path
@@ -342,7 +337,7 @@ class AttackAgent(CaptureAgent):
         #food_list = self.getFood(successor).asList()
         features = util.Counter()
         pos = successor.getAgentState(self.index).getPosition()
-        #self.debugDraw(pos, [0,0,1], True)
+        #self.debugDraw(pos, [1,0,0], True)
         if (self.red and pos[0] > self.halfway) or (not self.red and pos[0] < self.halfway):
             theirSide = 999
         else:
@@ -388,7 +383,7 @@ class AttackAgent(CaptureAgent):
                                             'minDistanceOurArea': 0}
         elif goal == "getBorder":
             return {'minDistanceFood': 0,
-                                            'minDistanceOpponent': 1,
+                                            'minDistanceOpponent': 10,
                                             'minDistanceCapsule': 0,
                                             'minDistanceOurArea': 1}
         elif goal == "getFood":
