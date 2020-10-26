@@ -1,6 +1,4 @@
-# AI Method 3 - Computational Approach
-
-Your notes about this part of the project, including acknowledgement, comments, strengths and limitations, etc.
+# AI Method 3 - Approximate Q-Learning
 
 # Table of Contents
 - [Governing Strategy Tree](#governing-strategy-tree)
@@ -14,21 +12,21 @@ Your notes about this part of the project, including acknowledgement, comments, 
 ## Governing Strategy Tree  
 
 ### Motivation  
+The Pac Man capture the flag problem can be framed as an MDP, where we don't have an explicit transition funciton, and the rewards are not known. This can be solved by using a model-free learning algorithm such as Q-learning. 
 
-Capture the Flag (Pac-Man) state space
-* Location for our agents (# possibilities^2)
-* State of our agents (Pac-Man, not scared ghost, scared ghost)
-* Location for enemy agents (# possibilities^2)
-* State of our agents (Pac-Man, not scared ghost, scared ghost)
-* If it is possible to know the location of the ghost or not 
-* Location for food
-* Location for pills
+The basic setup of the capture the flag state space can be listed as follows:
+- Location for our agents (# possibilities^2)
+- State of our agents (Pac-Man, not scared ghost, scared ghost)
+- Location for enemy agents (# possibilities^2)
+- State of our agents (Pac-Man, not scared ghost, scared ghost)
+- If it is possible to know the location of the ghost or not 
+- Location for food
+- Location for pills
 
-Given the above, it can be concluded that the number of possible states in the game is very large, leading to several problems that can increase or decrease depending on the chosen approach. 
+As there is a cap on computational time, an algorithm must be able to run in the time given and so has to have a limit on time complexity. As can be seen from the above representation, the total number of possible states in the game is very large, leading to several problems in solving the problem which depend on the approach. Taking this state model into account, an approximate Q-learning strategy was employed, as it was possible to learn the weights for parameters used in calculating the Q function offline, and then use these in an online setting by selecting the action that maximises the Q-value of the successor state. 
 
 Approximate Q-Learning
-Among the different approaches to solve Capture the Flag is approximate Q-learning. This method uses the same approach as Q-learning, which uses rewards to guide the agent in the right direction and, the exploration and exploitation approach to encourage the agent to search for novel states and rewards. With the difference that approximate Q-learning assumes the existence of a feature function ![f1] over state and action pairs, where the feature function is represented by a vector of feature values ![f2], reducing the description of a state to a number of features determined with domain knowledge. 
-
+This method uses the same approach as Q-learning, which uses rewards to guide the agent in the right direction and, the exploration and exploitation approach to encourage the agent to search for novel states and rewards. The difference between Q-learning and approximate Q-learning is that approximate Q-learning assumes the existence of a feature function ![f1] over state and action pairs, where the feature function is represented by a vector of feature values ![f2], reducing the description of a state to a number of features determined with domain knowledge. 
 
 [Back to top](#table-of-contents)
 
